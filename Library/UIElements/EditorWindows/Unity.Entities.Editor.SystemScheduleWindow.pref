@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &1
+MonoBehaviour:
+  m_ObjectHideFlags: 61
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 12386, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Keys:
+  - __PanelContainer__rootVisualContainer__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__Unity.Editor.Bridge.TreeView
+  - __PanelContainer__rootVisualContainer__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__UnityEngine.UIElements.ListView
+  - __PanelContainer__rootVisualContainer__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__list-view__scroll-view__HorizontalScroller__Slider__UnityEngine.UIElements.Slider
+  - __PanelContainer__rootVisualContainer__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__dots-editor__Unity.Entities.Editor.SystemScheduleWindow+7d508355732146faaf9b3831dd4e56f7__list-view__scroll-view__VerticalScroller__Slider__UnityEngine.UIElements.Slider
+  m_Values:
+  - '{"m_ExpandedItemIds":[-1809242124,-1444206961]}'
+  - '{"m_ItemHeight":16,"m_ItemHeightIsInline":true,"m_ScrollOffset":0.0,"m_SelectedIds":[-1444206961]}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":0.0}'
