@@ -9,9 +9,8 @@ using UnityEngine;
 
 public class RenderSystem : ComponentSystem
 {
-    Mesh quadMesh;
-    Material cellImage;
-    Material pieceImage;
+    private Mesh quadMesh;
+    private Material cellImage;
 
     private System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
     {
@@ -35,9 +34,11 @@ public class RenderSystem : ComponentSystem
     {
         base.OnStartRunning();
         quadMesh = BoardManager.GetInstance().quadMesh;
-        cellImage = BoardManager.GetInstance().WalkingSpriteSheetMaterial;
+        cellImage = BoardManager.GetInstance().cellImage;
     }
     protected override void OnUpdate() {
+
+        #region For Graphcs.DrawMeshInstanced
         //this code is for Graphics.DrawMeshInstanced
         /*EntityQuery entityQuery = GetEntityQuery(typeof(CellComponent));
 
@@ -55,9 +56,12 @@ public class RenderSystem : ComponentSystem
         Graphics.DrawMeshInstanced(
             quadMesh,
             0,
-            material,
+            cellImage,
             cellList
         );*/
+        #endregion
+
+
         //code for drawing the cells
         Entities.WithAll<CellComponent>().
             ForEach((ref Translation translation, ref CellComponent cellComponent) => {
@@ -71,7 +75,7 @@ public class RenderSystem : ComponentSystem
         });
 
         //code for rendering the pieces
-        Entities.WithAll<PieceComponent, Translation>()
+        Entities.WithAll<PieceComponent>()
             .ForEach((ref Translation translation, ref PieceComponent piece)=> {
             Graphics.DrawMesh(
                 quadMesh,

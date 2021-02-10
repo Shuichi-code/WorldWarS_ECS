@@ -16,7 +16,7 @@ public class BoardManager : MonoBehaviour
     }
 
     public Mesh quadMesh;
-    public Material WalkingSpriteSheetMaterial;
+    public Material cellImage;
     private int boardIndex = 0;
     [SerializeField]
     NativeArray<Entity> boardArray;
@@ -89,7 +89,7 @@ public class BoardManager : MonoBehaviour
         {
             for (int rows = 0; rows < maxRow; rows++)
             {
-                float3 spawnPosition = new float3(-4f+rows, -3.5f+columns, 50);
+                float3 spawnPosition = new float3(-4f+rows, -4f+columns, 50);
                 cellposition[rows, columns] = spawnPosition;
                 //Debug.Log("Spawn position at CellPosition["+rows+","+columns+"] is "+spawnPosition);
                 entityManager.SetComponentData(boardArray[boardIndex],
@@ -119,7 +119,9 @@ public class BoardManager : MonoBehaviour
     {
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
-            typeof(PieceComponent)
+            typeof(LocalToWorld),
+            typeof(PieceComponent),
+            typeof(PieceTag)
         );
 
         pieceArray = new NativeArray<Entity>(21, Allocator.Temp);

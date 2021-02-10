@@ -31,7 +31,7 @@ public class GenerateBoardSystem : ComponentSystem
             typeof(Translation),
             typeof(RenderMesh),
             typeof(RenderBounds),
-            typeof(CellTag)
+            typeof(CellComponent)
         );
         boardArray = new NativeArray<Entity>(maxRow * maxCol, Allocator.Temp);
         entityManager.CreateEntity(entityArchetype, boardArray);
@@ -77,18 +77,4 @@ public class GenerateBoardSystem : ComponentSystem
     {
         //throw new System.NotImplementedException();
     }
-
-    /*protected override void OnUpdate() => Entities.
-                WithAll<CellTag>().
-                ForEach((ref Translation translation) =>
-                {
-                    Graphics.DrawMesh(
-                        mesh,
-                        translation.Value,
-                        Quaternion.identity,
-                        cellSprite,
-                        31
-                     );
-                });
-    */
 }
