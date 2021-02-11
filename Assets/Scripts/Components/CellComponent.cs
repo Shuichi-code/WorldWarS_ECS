@@ -9,4 +9,5 @@ public struct CellComponent : IComponentData
 {
     //this code is for Graphics.DrawMeshInstanced
     //public Matrix4x4 matrix;
+    //public CheckCellStateSystem.CellState cellState;
 }

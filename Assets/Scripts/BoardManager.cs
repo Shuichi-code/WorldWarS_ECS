@@ -15,9 +15,13 @@ public class BoardManager : MonoBehaviour
         return instance;
     }
 
+    public bool isSelecting { get; set; } = false;
     public Mesh quadMesh;
     public Material cellImage;
+    public Material highlightedImage;
     private int boardIndex = 0;
+    private float3 piecePosition;
+
     [SerializeField]
     NativeArray<Entity> boardArray;
     NativeArray<Entity> pieceArray;
@@ -70,8 +74,6 @@ public class BoardManager : MonoBehaviour
         createPieces(Color.white);
         createPieces(Color.black);
     }
-
-
 
     /// <summary>
     /// Creates the board by instantiating cell entities based on maxRow vs maxCol
@@ -129,45 +131,21 @@ public class BoardManager : MonoBehaviour
 
         for (int i = 0; i < mPieceOrder.Length; i++)
         {
-            entityManager.SetComponentData(pieceArray[i],
-                 new PieceComponent
-                 {
-                     pieceRank = mPieceOrder[i],
-                     teamColor = color
-                 }
-             );
-
             //This is code for the placement of the pieces on the board
             if (color == Color.white)
             {
                 //TODO: write code for placing white pieces
                 if (i < 9)
                 {
-                    entityManager.SetComponentData(pieceArray[i],
-                         new Translation
-                         {
-                             Value = new float3(cellposition[i, 2].x, cellposition[i, 2].y, cellposition[i, 2].z - 10f)
-                         }
-                     );
+                    piecePosition = new float3(cellposition[i, 2].x, cellposition[i, 2].y, cellposition[i, 2].z - 10f);
                 }
                 else if (i >= 9 && i < 18)
                 {
-                    //Debug.Log(i);
-                    entityManager.SetComponentData(pieceArray[i],
-                         new Translation
-                         {
-                             Value = new float3(cellposition[i-9, 1].x, cellposition[i-9, 1].y, cellposition[i-9, 1].z - 10f)
-                         }
-                    );
+                    piecePosition = new float3(cellposition[i - 9, 1].x, cellposition[i - 9, 1].y, cellposition[i - 9, 1].z - 10f);
                 }
                 else
                 {
-                    entityManager.SetComponentData(pieceArray[i],
-                         new Translation
-                         {
-                             Value = new float3(cellposition[i-18, 0].x, cellposition[i-18, 0].y, cellposition[i-18, 0].z - 10f)
-                         }
-                    );
+                    piecePosition = new float3(cellposition[i - 18, 0].x, cellposition[i - 18, 0].y, cellposition[i - 18, 0].z - 10f);
                 }
 
             }
@@ -176,33 +154,32 @@ public class BoardManager : MonoBehaviour
                 //TODO: write code for placing black pieces
                 if (i < 9)
                 {
-                    entityManager.SetComponentData(pieceArray[i],
-                         new Translation
-                         {
-                             Value = new float3(cellposition[i, 5].x, cellposition[i, 5].y, cellposition[i, 5].z - 10f)
-                         }
-                     );
+                    piecePosition = new float3(cellposition[i, 5].x, cellposition[i, 5].y, cellposition[i, 5].z - 10f);
                 }
                 else if (i >= 9 && i < 18)
                 {
-                    //Debug.Log(i);
-                    entityManager.SetComponentData(pieceArray[i],
-                         new Translation
-                         {
-                             Value = new float3(cellposition[i - 9, 6].x, cellposition[i - 9, 6].y, cellposition[i - 9, 6].z - 10f)
-                         }
-                    );
+                    piecePosition = new float3(cellposition[i - 9, 6].x, cellposition[i - 9, 6].y, cellposition[i - 9, 6].z - 10f);
+                    //Debug.Log(i);;
                 }
                 else
                 {
-                    entityManager.SetComponentData(pieceArray[i],
-                         new Translation
-                         {
-                             Value = new float3(cellposition[i - 18, 7].x, cellposition[i - 18, 7].y, cellposition[i - 18, 7].z - 10f)
-                         }
-                    );
+                    piecePosition = new float3(cellposition[i - 18, 7].x, cellposition[i - 18, 7].y, cellposition[i - 18, 7].z - 10f);
                 }
             }
+            entityManager.SetComponentData(pieceArray[i],
+                 new Translation
+                 {
+                     Value = piecePosition
+                 }
+            );
+            entityManager.SetComponentData(pieceArray[i],
+                 new PieceComponent
+                 {
+                     originalCellPosition = piecePosition,
+                     pieceRank = mPieceOrder[i],
+                     teamColor = color
+                 }
+             );
         }
 
 
