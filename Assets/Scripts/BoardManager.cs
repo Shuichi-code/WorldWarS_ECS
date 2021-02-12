@@ -19,6 +19,7 @@ public class BoardManager : MonoBehaviour
     public Mesh quadMesh;
     public Material cellImage;
     public Material highlightedImage;
+    public Material enemyCellImage;
     private int boardIndex = 0;
     private float3 piecePosition;
 
@@ -27,6 +28,7 @@ public class BoardManager : MonoBehaviour
     NativeArray<Entity> pieceArray;
 
     EntityManager entityManager;
+    EntityArchetype entityGameManagerArchetype;
     EntityArchetype entityArchetype;
 
     //Matrix4x4 matrix;
@@ -60,13 +62,23 @@ public class BoardManager : MonoBehaviour
         {"Pvt", 13 },
         {"Flg", 14 },
     };
+    float3[] cellPositionArray = new float3[maxRow*maxCol];
 
     private void Awake()
     {
         instance = this;
 
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-
+        entityGameManagerArchetype = entityManager.CreateArchetype(
+                typeof(GameManagerComponent)
+        );
+        Entity gameManager = entityManager.CreateEntity(entityGameManagerArchetype);
+        entityManager.SetComponentData( gameManager,
+            new GameManagerComponent
+            {
+                state = GameManagerComponent.State.Playing,
+                isDragging = false
+            });
         //this code is for Graphics.DrawMeshInstanced
         //matrix = new Matrix4x4();
 
@@ -92,12 +104,19 @@ public class BoardManager : MonoBehaviour
             for (int rows = 0; rows < maxRow; rows++)
             {
                 float3 spawnPosition = new float3(-4f+rows, -4f+columns, 50);
+                cellPositionArray[boardIndex] = spawnPosition;
                 cellposition[rows, columns] = spawnPosition;
                 //Debug.Log("Spawn position at CellPosition["+rows+","+columns+"] is "+spawnPosition);
                 entityManager.SetComponentData(boardArray[boardIndex],
                     new Translation
                     {
                         Value = spawnPosition
+                    }
+                );
+                entityManager.SetComponentData(boardArray[boardIndex],
+                    new CellComponent
+                    {
+                        pieceColor = Color.clear
                     }
                 );
 
@@ -121,7 +140,6 @@ public class BoardManager : MonoBehaviour
     {
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
-            typeof(LocalToWorld),
             typeof(PieceComponent),
             typeof(PieceTag)
         );
@@ -180,8 +198,19 @@ public class BoardManager : MonoBehaviour
                      teamColor = color
                  }
              );
+            for (int j = 0; j < cellPositionArray.Length; j++)
+            {
+                if(cellPositionArray[j].x == piecePosition.x && cellPositionArray[j].y == piecePosition.y)
+                {
+                    entityManager.SetComponentData(boardArray[j],
+                        new CellComponent
+                        {
+                            hasPiece = true,
+                            pieceColor = color
+                        }
+                    );
+                }
+            }
         }
-
-
     }
 }

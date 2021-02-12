@@ -12,6 +12,7 @@ public class RenderSystem : ComponentSystem
     private Mesh quadMesh;
     private Material cellImage;
     private Material highlightedImage;
+    private Material enemycellImage;
 
     private System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
     {
@@ -37,6 +38,7 @@ public class RenderSystem : ComponentSystem
         quadMesh = BoardManager.GetInstance().quadMesh;
         cellImage = BoardManager.GetInstance().cellImage;
         highlightedImage = BoardManager.GetInstance().highlightedImage;
+        enemycellImage = BoardManager.GetInstance().enemyCellImage;
     }
     protected override void OnUpdate() {
 
@@ -99,5 +101,17 @@ public class RenderSystem : ComponentSystem
                     0
                 );
             });
+
+        //code for rendering enemy cells
+        Entities.WithAll<EnemyCellTag>()
+        .ForEach((ref Translation translation) => {
+            Graphics.DrawMesh(
+                quadMesh,
+                translation.Value,
+                Quaternion.identity,
+                enemycellImage,
+                0
+            );
+        });
     }
 }

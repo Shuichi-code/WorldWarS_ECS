@@ -8,83 +8,102 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-[UpdateAfter(typeof(PieceMovementSystem))]
+//[UpdateAfter(typeof(PieceMovementSystem))]
+
 public class CheckCellStateSystem : SystemBase
 {
     private EntityCommandBufferSystem entityCommandBuffer;
+    private EntityQuery selectedPieceQuery;
+    private Entity dragPieceEntity;
+    PieceComponent dragPiece;
+    Translation dragPiecePosition;
+
     protected override void OnCreate()
     {
         base.OnStartRunning();
         entityCommandBuffer = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PieceMovementSystem>().dragPieceEvent += OnDragPiece;
-    }
-
-    private void OnDragPiece(object sender, PieceMovementSystem.OnDragPressedEventArgs e)
-    {
-
     }
 
     protected override void OnUpdate()
     {
-            //Insert Code for checking which cells can be highlighted
+        EntityQuery gameManagerQuery = GetEntityQuery(typeof(GameManagerComponent));
+        Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
+        ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
+        var ecb = entityCommandBuffer.CreateCommandBuffer();
+        //var ecb = new EntityCommandBuffer(Allocator.TempJob);
+        selectedPieceQuery = GetEntityQuery(typeof(SelectedTag));
+        if (gameManagerArray[gameManagerEntity].isDragging)
+        {
+            Entity dragPieceEntity = selectedPieceQuery.GetSingletonEntity();
+            ComponentDataFromEntity<Translation> dragPiecePositionArray = GetComponentDataFromEntity<Translation>();
+            ComponentDataFromEntity<PieceComponent> dragPieceArray = GetComponentDataFromEntity<PieceComponent>();
+            Translation dragPiecePosition = dragPiecePositionArray[dragPieceEntity];
+            PieceComponent dragPiece = dragPieceArray[dragPieceEntity];
+        }
 
-            var ecb = entityCommandBuffer.CreateCommandBuffer();
-            Entities.WithoutBurst().WithAll<CellComponent>().
-                ForEach((Entity cell, in Translation translation) => {
-                    //Debug.Log("Checking each cell!");
-                    if (Input.GetMouseButtonDown(0) && BoardManager.GetInstance().isSelecting)
+        Entities.WithoutBurst().WithAll<CellComponent>().
+            ForEach((Entity cell, in Translation translation) =>
+            {
+                //Debug.Log("Checking each cell!");
+                if (gameManagerArray[gameManagerEntity].isDragging)
+                {
+                    //Debug.Log("Translation data is: "+dragPiecePosition);
+                    float3[] surroundCellArray = new float3[4];
+                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
+                    surroundCellArray[0] = new float3(dragPiecePosition.Value.x, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z);
+                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
+                    surroundCellArray[1] = new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y, dragPiecePosition.Value.z);
+                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
+                    surroundCellArray[2] = new float3(dragPiecePosition.Value.x, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z);
+                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
+                    surroundCellArray[3] = new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y, dragPiecePosition.Value.z);
+
+                    //NativeArray<float3> surroundCellNativeArray = new NativeArray<float3>(surroundCellArray, Allocator.Temp);
+                    CellComponent cellComponent = GetComponent<CellComponent>(cell);
+
+                    //Validate if the surrounding cells
+                    foreach (float3 cellPos in surroundCellArray)
                     {
-                        //Debug.Log("Left click is being held!");
-                        EntityQuery pieceQuery = GetEntityQuery(typeof(SelectedTag));
-
-                        Entity dragPiece = pieceQuery.GetSingletonEntity();
-                        Translation dragPiecePosition = GetComponent<Translation>(dragPiece);
-                        //Debug.Log("Checking!");
-                        List<float3> surroundCellList = new List<float3>();
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
-                        surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y, dragPiecePosition.Value.z));
-
-                        //Validate if the surrounding cells
-                        if (surroundCellList.Contains(translation.Value))
+                        //remove the highlighted tag if there is a ally cell next to the piece
+                        if (cellPos.x == translation.Value.x && cellPos.y == translation.Value.y)
                         {
-                            Debug.Log("Found matching surrounding cells!");
-                            ecb.AddComponent<HighlightedTag>(cell);
-                        }
-                    }
-                }).Run();
-        /*
-        Entities.WithoutBurst().
-            WithAny<PieceComponent>().
-                ForEach((Entity entity, ref Translation translation) => {
-                    Translation pieceTranslation = GetComponent<Translation>(entity);
-                    float3 piecePosition = pieceTranslation.Value;
-
-                    EntityQuery cellQuery = GetEntityQuery(typeof(CellComponent));
-                    NativeArray<Entity> cellArray = cellQuery.ToEntityArray(Allocator.Temp);
-
-                    EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-                    for (int i = 0; i < cellArray.Length; i++)
-                    {
-                        Translation cellTranslation = GetComponent<Translation>(cellArray[i]);
-                        float3 cellPosition = cellTranslation.Value;
-
-                        if (piecePosition.x == cellPosition.x && piecePosition.y == cellPosition.y)
-                        {
-                            entityManager.SetComponentData(cellArray[i], new CellComponent
+                            if (cellComponent.pieceColor == dragPiece.teamColor)
                             {
-                                cellState = CellState.None
-                            });
+                                return;
+                            }
+                            else if (cellComponent.pieceColor == Color.clear)
+                            {
+                                if (!HasComponent<HighlightedTag>(cell))
+                                {
+                                    ecb.AddComponent<HighlightedTag>(cell);
+                                }
+                            }
+                            else
+                            {
+                                if (!HasComponent<EnemyCellTag>(cell))
+                                {
+                                    ecb.AddComponent<EnemyCellTag>(cell);
+                                }
+                            }
                         }
+                        else
+                        {
+                            //Debug.Log("No longer holding the mousebutton.");
+                            if (HasComponent<HighlightedTag>(cell))
+                            {
+                                ecb.RemoveComponent<HighlightedTag>(cell);
+                            }
+                            if (HasComponent<EnemyCellTag>(cell))
+                            {
+                                ecb.RemoveComponent<EnemyCellTag>(cell);
+                            }
+                        }
+                        //surroundCellNativeArray.Dispose();
                     }
-                }).Run();
-        */
+                }
+            }).Run();
+        //ecb.Playback(EntityManager);
+        //ecb.Dispose();
     }
 }
 

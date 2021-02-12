@@ -382,6 +382,7 @@ MonoBehaviour:
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   cellImage: {fileID: 2100000, guid: 596c4f3d430296e42978efad25415ff8, type: 2}
   highlightedImage: {fileID: 2100000, guid: e0121bcec17beb049b85b591b632ebf3, type: 2}
+  enemyCellImage: {fileID: 2100000, guid: 117fa9bc1e89d7142a4758a04ca10cfa, type: 2}
 --- !u!4 &834337873
 Transform:
   m_ObjectHideFlags: 0

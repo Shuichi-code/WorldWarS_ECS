@@ -9,12 +9,6 @@ using UnityEngine;
 
 public class PieceMovementSystem : SystemBase
 {
-    public event EventHandler<OnDragPressedEventArgs> dragPieceEvent;
-    public class OnDragPressedEventArgs : EventArgs
-    {
-        public bool isDragged;
-    }
-    public struct EventComponent : IComponentData { }
     private EntityCommandBufferSystem entityCommandBuffer;
 
     protected override void OnStartRunning()
@@ -22,38 +16,47 @@ public class PieceMovementSystem : SystemBase
         base.OnCreate();
         entityCommandBuffer = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
 
-}
+    }
 
     protected override void OnUpdate()
     {
-        var ecb = new EntityCommandBuffer(Allocator.TempJob);//entityCommandBuffer.CreateCommandBuffer();
-        EntityArchetype eventEntityArchetype = EntityManager.CreateArchetype(typeof(EventComponent));
+        //var ecb = new EntityCommandBuffer(Allocator.TempJob);//entityCommandBuffer.CreateCommandBuffer();
+        var ecb = entityCommandBuffer.CreateCommandBuffer();
+        //get the gamemanager Entity
+        EntityQuery gameManagerQuery = GetEntityQuery(typeof(GameManagerComponent));
+        Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
+        ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
 
-        Entities.WithoutBurst().WithAll<PieceTag>()
-            .ForEach((Entity entity, int entityInQueryIndex, ref Translation translation) =>
+        //gets the mouseposition to check which piece is being dragged
+        float3 mousePos = Input.mousePosition;
+        float3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
+
+        //job for iterating through all the pieces and puts a tag on the entity nearest the mouse when the left click is held down
+        Entities.
+            WithAll<PieceTag>().
+            ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref PieceComponent piece) =>
             {
-                bool isSelecting = BoardManager.GetInstance().isSelecting;
                 if (Input.GetMouseButtonDown(0))
                 {
-                    float3 mousePos = Input.mousePosition;
-                    float3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
                     float3 originalPosition = new float3();
 
                     if ((translation.Value.x == Math.Round(worldPos.x)) &&
                     (translation.Value.y == Math.Round(worldPos.y)) &&
-                    !isSelecting)
+                    !gameManagerArray[gameManagerEntity].isDragging)
                     {
                         originalPosition = translation.Value;
                         if (!HasComponent<SelectedTag>(entity))
                         {
                             ecb.AddComponent<SelectedTag>(entity);
-                            ecb.CreateEntity(eventEntityArchetype);
                         }
-                        isSelecting = true;
-                        dragPieceEvent?.Invoke(this, new OnDragPressedEventArgs { isDragged = true });
+                            ecb.SetComponent(gameManagerEntity,
+                                new GameManagerComponent
+                                {
+                                    isDragging = true,
+                                    state = GameManagerComponent.State.Playing
+                                }
+                            );
                     }
-
-                    //TODO: add code to highlight the possible cells that the piece can move
                 }
 
                 if (Input.GetMouseButtonUp(0))
@@ -61,28 +64,24 @@ public class PieceMovementSystem : SystemBase
                     //add code to set the piece down
                     if (HasComponent<SelectedTag>(entity))
                     {
+                        //sets the piece down to the nearest cell of the mouse
+                        translation.Value.x = (float)Math.Round(translation.Value.x);
+                        translation.Value.y = (float)Math.Round(translation.Value.y);
+
+                        piece.originalCellPosition.x = (float)Math.Round(translation.Value.x);
+                        piece.originalCellPosition.y = (float)Math.Round(translation.Value.y);
                         ecb.RemoveComponent<SelectedTag>(entity);
                     }
-                    //sets the piece down to the nearest cell of the mouse
-                    translation.Value.x = (float)Math.Round(translation.Value.x);
-                    translation.Value.y = (float)Math.Round(translation.Value.y);
-
-                    isSelecting = (isSelecting) ? false : true;
-                    dragPieceEvent?.Invoke(this, new OnDragPressedEventArgs { isDragged = false });
+                    ecb.SetComponent(gameManagerEntity,
+                        new GameManagerComponent
+                        {
+                            isDragging = false,
+                            state = GameManagerComponent.State.Playing
+                        }
+                    );
                 }
             }).Run();
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
-
-        Entities.WithoutBurst().ForEach((ref EventComponent eventComponent) => {
-            dragPieceEvent?.Invoke(this, new OnDragPressedEventArgs { isDragged = true });
-        }).Run();
-        EntityManager.DestroyEntity(GetEntityQuery(typeof(EventComponent)));
-    }
-
-    protected override void OnDestroy()
-    {
-        base.OnDestroy();
-        //nativeQueue.Dispose();
+        //ecb.Playback(EntityManager);
+        //ecb.Dispose();
     }
 }
