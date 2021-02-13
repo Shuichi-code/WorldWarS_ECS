@@ -113,12 +113,7 @@ public class BoardManager : MonoBehaviour
                         Value = spawnPosition
                     }
                 );
-                entityManager.SetComponentData(boardArray[boardIndex],
-                    new CellComponent
-                    {
-                        pieceColor = Color.clear
-                    }
-                );
+                entityManager.AddBuffer<CellNeighborBuffer>(boardArray[boardIndex]);
 
                 //this code is for Graphics.DrawMeshInstanced
                 /*matrix.SetTRS(spawnPosition, Quaternion.identity, Vector3.one);
@@ -202,11 +197,18 @@ public class BoardManager : MonoBehaviour
             {
                 if(cellPositionArray[j].x == piecePosition.x && cellPositionArray[j].y == piecePosition.y)
                 {
-                    entityManager.SetComponentData(boardArray[j],
+                    /*entityManager.SetComponentData(boardArray[j],
                         new CellComponent
                         {
                             hasPiece = true,
                             pieceColor = color
+                        }
+                    );*/
+                    entityManager.AddComponent<PieceOnCellComponent>(boardArray[j]);
+                    entityManager.SetComponentData(boardArray[j],
+                        new PieceOnCellComponent
+                        {
+                            piece = pieceArray[i]
                         }
                     );
                 }
