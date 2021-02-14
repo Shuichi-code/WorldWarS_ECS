@@ -6,16 +6,18 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
+[UpdateInGroup(typeof(SimulationSystemGroup))]
 public class DragToMouseSystem : SystemBase
 {
     protected override void OnUpdate()
     {
-        Entities.WithoutBurst().WithAll<SelectedTag, PieceTag>().ForEach((ref Translation translation) => {
-            float3 mousePos = Input.mousePosition;
-            float3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
-
-            translation.Value.x = worldPos.x;
-            translation.Value.y = worldPos.y;
-        }).Run();
+        float3 mousePos = Input.mousePosition;
+        float3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
+        Entities.
+            WithAll<SelectedTag>().
+            ForEach((ref Translation translation) => {
+                translation.Value.x = worldPos.x;
+                translation.Value.y = worldPos.y;
+        }).Schedule();
     }
 }

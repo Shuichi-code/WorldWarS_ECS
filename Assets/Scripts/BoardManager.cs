@@ -36,33 +36,37 @@ public class BoardManager : MonoBehaviour
     const int maxRow = 9;
     const int maxCol = 8;
 
+    //default arrangement of pieces in the board. numbers represent the piecerank
     int[] mPieceOrder = new int[21]
     {
         1, 2, 3, 4, 5, 6, 7,
         8, 9, 10, 11, 12, 13,13,
         13,13,13,13, 0, 0, 14
     };
+
     float3[,] cellposition = new float3[maxRow,maxCol];
 
-    private System.Collections.Generic.Dictionary<string, int> mPieceRank = new System.Collections.Generic.Dictionary<string, int>()
+    private System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
     {
-        {"Spy", 0 },
-        {"G5S", 1 },
-        {"G4S", 2 },
-        {"LtG", 3 },
-        {"MjG", 4 },
-        {"BrG", 5 },
-        {"Col", 6 },
-        {"LtCol", 7 },
-        {"Maj", 8 },
-        {"Cpt", 9 },
-        {"1Lt", 10 },
-        {"2Lt", 11 },
-        {"Sgt", 12 },
-        {"Pvt", 13 },
-        {"Flg", 14 },
+        { 0 ,"Spy"},
+        { 1 ,"G5S" },
+        { 2 ,"G4S" },
+        { 3 ,"LtG"},
+        { 4 ,"MjG"},
+        { 5 ,"BrG"},
+        { 6 ,"Col"},
+        { 7 ,"LtCol"},
+        { 8,"Maj" },
+        { 9 ,"Cpt"},
+        { 10 ,"1Lt"},
+        { 11 ,"2Lt"},
+        { 12 ,"Sgt"},
+        { 13 ,"Pvt"},
+        { 14 ,"Flg"},
     };
     float3[] cellPositionArray = new float3[maxRow*maxCol];
+    private float3[] neighborCellPositionArray = new float3[4];
+    float3 spawnPosition;
 
     private void Awake()
     {
@@ -73,11 +77,12 @@ public class BoardManager : MonoBehaviour
                 typeof(GameManagerComponent)
         );
         Entity gameManager = entityManager.CreateEntity(entityGameManagerArchetype);
-        entityManager.SetComponentData( gameManager,
+        entityManager.SetComponentData(gameManager,
             new GameManagerComponent
             {
                 state = GameManagerComponent.State.Playing,
-                isDragging = false
+                isDragging = false,
+                teamToMove = Color.white
             });
         //this code is for Graphics.DrawMeshInstanced
         //matrix = new Matrix4x4();
@@ -94,7 +99,10 @@ public class BoardManager : MonoBehaviour
     {
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
-            typeof(CellComponent)
+            typeof(CellComponent),
+            typeof(RenderMesh),
+            typeof(RenderBounds),
+            typeof(LocalToWorld)
         );
         boardArray = new NativeArray<Entity>(maxRow * maxCol, Allocator.Temp);
         entityManager.CreateEntity(entityArchetype, boardArray);
@@ -103,27 +111,60 @@ public class BoardManager : MonoBehaviour
         {
             for (int rows = 0; rows < maxRow; rows++)
             {
-                float3 spawnPosition = new float3(-4f+rows, -4f+columns, 50);
+                spawnPosition = new float3(-4f+rows, -4f+columns, 50);
                 cellPositionArray[boardIndex] = spawnPosition;
                 cellposition[rows, columns] = spawnPosition;
-                //Debug.Log("Spawn position at CellPosition["+rows+","+columns+"] is "+spawnPosition);
                 entityManager.SetComponentData(boardArray[boardIndex],
                     new Translation
                     {
                         Value = spawnPosition
                     }
                 );
-                entityManager.AddBuffer<CellNeighborBuffer>(boardArray[boardIndex]);
-
-                //this code is for Graphics.DrawMeshInstanced
-                /*matrix.SetTRS(spawnPosition, Quaternion.identity, Vector3.one);
-                entityManager.SetComponentData(boardArray[boardIndex],
-                    new CellComponent
+                entityManager.SetSharedComponentData(boardArray[boardIndex],
+                    new RenderMesh
                     {
-                        matrix = matrix
+                        mesh = quadMesh,
+                        material = cellImage
                     }
-                );*/
+                );
+
                 boardIndex++;
+            }
+        }
+        setNeighbors();
+    }
+
+    /// <summary>
+    /// Sets the neighborbuffers for each of the cell elements
+    /// </summary>
+    private void setNeighbors()
+    {
+        for(int i = 0; i < maxRow*maxCol; i++ )
+        {
+            float3 currentCellPosition = cellPositionArray[i];
+            Entity currentCell = boardArray[i];
+
+            float cellXCoordinate = cellPositionArray[i].x;
+            float cellYCoordinate = cellPositionArray[i].y;
+            neighborCellPositionArray[0] = new float3(cellXCoordinate, cellYCoordinate + 1f, cellPositionArray[i].z);
+            //surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
+            neighborCellPositionArray[1] = new float3(cellXCoordinate + 1f, cellYCoordinate, cellPositionArray[i].z);
+            //surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
+            neighborCellPositionArray[2] = new float3(cellXCoordinate, cellYCoordinate - 1f, cellPositionArray[i].z);
+            //surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
+            neighborCellPositionArray[3] = new float3(cellXCoordinate - 1f, cellYCoordinate, cellPositionArray[i].z);
+
+            foreach (float3 neighborCellPosition in neighborCellPositionArray)
+            {
+                for (int j = 0; j < cellPositionArray.Length; j++)
+                {
+                    if (neighborCellPosition.x == cellPositionArray[j].x && neighborCellPosition.y == cellPositionArray[j].y)
+                    {
+                        DynamicBuffer<CellNeighborBufferElement> cellNeighborBuffers = entityManager.AddBuffer<CellNeighborBufferElement>(boardArray[i]);
+                        cellNeighborBuffers.Add(new CellNeighborBufferElement { cellNeighbor = boardArray[j] });
+                    }
+                }
+
             }
         }
     }
@@ -136,7 +177,10 @@ public class BoardManager : MonoBehaviour
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
             typeof(PieceComponent),
-            typeof(PieceTag)
+            typeof(PieceTag),
+            typeof(RenderMesh),
+            typeof(RenderBounds),
+            typeof(LocalToWorld)
         );
 
         pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
@@ -144,10 +188,10 @@ public class BoardManager : MonoBehaviour
 
         for (int i = 0; i < mPieceOrder.Length; i++)
         {
-            //This is code for the placement of the pieces on the board
+            //Place the pieces on the board
             if (color == Color.white)
             {
-                //TODO: write code for placing white pieces
+                //Placing white pieces
                 if (i < 9)
                 {
                     piecePosition = new float3(cellposition[i, 2].x, cellposition[i, 2].y, cellposition[i, 2].z - 10f);
@@ -164,7 +208,7 @@ public class BoardManager : MonoBehaviour
             }
             else
             {
-                //TODO: write code for placing black pieces
+                //Placing black pieces
                 if (i < 9)
                 {
                     piecePosition = new float3(cellposition[i, 5].x, cellposition[i, 5].y, cellposition[i, 5].z - 10f);
@@ -193,17 +237,16 @@ public class BoardManager : MonoBehaviour
                      teamColor = color
                  }
              );
+            entityManager.SetSharedComponentData(pieceArray[i], new RenderMesh {
+                mesh = quadMesh,
+                material = Resources.Load(mPieceRank[mPieceOrder[i]], typeof(Material)) as Material
+            });
+
+            //setting the pieces on the cell as reference
             for (int j = 0; j < cellPositionArray.Length; j++)
             {
                 if(cellPositionArray[j].x == piecePosition.x && cellPositionArray[j].y == piecePosition.y)
                 {
-                    /*entityManager.SetComponentData(boardArray[j],
-                        new CellComponent
-                        {
-                            hasPiece = true,
-                            pieceColor = color
-                        }
-                    );*/
                     entityManager.AddComponent<PieceOnCellComponent>(boardArray[j]);
                     entityManager.SetComponentData(boardArray[j],
                         new PieceOnCellComponent

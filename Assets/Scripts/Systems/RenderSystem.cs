@@ -7,12 +7,15 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-public class RenderSystem : ComponentSystem
+//[DisableAutoCreation]
+public class RenderSystem : SystemBase
 {
-    private Mesh quadMesh;
+    //private Mesh quadMesh;
     private Material cellImage;
     private Material highlightedImage;
     private Material enemycellImage;
+
+    private EntityCommandBufferSystem entityCommandBufferSystem;
 
     private System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
     {
@@ -35,83 +38,38 @@ public class RenderSystem : ComponentSystem
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
-        quadMesh = BoardManager.GetInstance().quadMesh;
-        cellImage = BoardManager.GetInstance().cellImage;
-        highlightedImage = BoardManager.GetInstance().highlightedImage;
-        enemycellImage = BoardManager.GetInstance().enemyCellImage;
+        //quadMesh = BoardManager.GetInstance().quadMesh;
+        //cellImage = BoardManager.GetInstance().cellImage;
+        //highlightedImage = BoardManager.GetInstance().highlightedImage;
+        //enemycellImage = BoardManager.GetInstance().enemyCellImage;
+        entityCommandBufferSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
     protected override void OnUpdate() {
-
-        #region For Graphcs.DrawMeshInstanced
-        //this code is for Graphics.DrawMeshInstanced
-        /*EntityQuery entityQuery = GetEntityQuery(typeof(CellComponent));
-
-        NativeArray<CellComponent> cellArray = entityQuery.ToComponentDataArray<CellComponent>(Allocator.Temp);
-
-        List<Matrix4x4> cellList = new List<Matrix4x4>();
-        for (int i = 0; i < cellArray.Length; i++)
-        {
-            cellList.Add(cellArray[i].matrix);
-        }
-
-        //MaterialPropertyBlock materialPropertyBlock = new MaterialPropertyBlock();
-        //material.enableInstancing = true;
-
-        Graphics.DrawMeshInstanced(
-            quadMesh,
-            0,
-            cellImage,
-            cellList
-        );*/
-        #endregion
-
-
-        //code for drawing the cells
-        Entities.WithAll<CellComponent>().WithNone<HighlightedTag>().
-            ForEach((ref Translation translation) => {
-            Graphics.DrawMesh(
-                quadMesh,
-                translation.Value,
-                Quaternion.identity,
-                cellImage,
-                0
-            );
-        });
-
-        //code for rendering the pieces
-        Entities.WithAll<PieceComponent>()
-            .ForEach((ref Translation translation, ref PieceComponent piece)=> {
-            Graphics.DrawMesh(
-                quadMesh,
-                translation.Value,
-                Quaternion.identity,
-                Resources.Load(mPieceRank[piece.pieceRank], typeof(Material)) as Material,
-                0
-            );
-        });
-
+        EntityCommandBuffer entityCommandBuffer = entityCommandBufferSystem.CreateCommandBuffer();
+        //Mesh quadMesh = BoardManager.GetInstance().quadMesh;
         //code for rendering highlighted cells
-        Entities.WithAll<HighlightedTag>()
-            .ForEach((ref Translation translation) => {
+
+        Entities.
+            WithoutBurst().
+            //WithAll<HighlightedTag>().
+            ForEach((Entity highlightedCellEntity, ref HighlightedTag highlightedTag, in Translation translation) => {
+
+            }).Run();
+
+        //code for rendering enemy cells
+        Entities.
+            WithoutBurst().
+            WithAll<EnemyCellTag>().
+            ForEach((ref Translation translation) => {
+                Mesh quadMesh = new Mesh();
+                quadMesh.name = "Quad";
                 Graphics.DrawMesh(
                     quadMesh,
                     translation.Value,
                     Quaternion.identity,
-                    highlightedImage,
+                    enemycellImage,
                     0
-                );
-            });
-
-        //code for rendering enemy cells
-        Entities.WithAll<EnemyCellTag>()
-        .ForEach((ref Translation translation) => {
-            Graphics.DrawMesh(
-                quadMesh,
-                translation.Value,
-                Quaternion.identity,
-                enemycellImage,
-                0
-            );
-        });
+               );
+            }).Run();
     }
 }

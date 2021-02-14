@@ -37,29 +37,42 @@ public class PiecePickupSystem : SystemBase
         //job for iterating through all the pieces and puts a tag on the entity nearest the mouse when the left click is held down
         Entities.
             WithAll<PieceTag>().
-            ForEach((Entity entity, int entityInQueryIndex, ref Translation translation, ref PieceComponent piece) =>
+            ForEach((Entity pieceEntity, ref Translation translation, in PieceComponent pieceComponent) =>
             {
                 if (Input.GetMouseButtonDown(0))
                 {
-                    float3 originalPosition = new float3();
-
                     if ((translation.Value.x == Math.Round(worldPos.x)) &&
                     (translation.Value.y == Math.Round(worldPos.y)) &&
+                    //teamColorToMove == pieceComponent.teamColor &&
                     !gameManagerArray[gameManagerEntity].isDragging)
                     {
-                        originalPosition = translation.Value;
-                        if (!HasComponent<SelectedTag>(entity))
+                        if (!HasComponent<SelectedTag>(pieceEntity))
                         {
-                            ecb.AddComponent<SelectedTag>(entity);
+                            //Debug.Log("Found a piece!");
+                            ecb.AddComponent<SelectedTag>(pieceEntity);
                         }
+
                         ecb.SetComponent(gameManagerEntity,
                             new GameManagerComponent
                             {
                                 isDragging = true,
-                                state = GameManagerComponent.State.Playing
+                                state = GameManagerComponent.State.Playing,
+                                teamToMove = gameManagerArray[gameManagerEntity].teamToMove
                             }
                         );
+                        //teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove == Color.black ? Color.white : Color.black;
                     }
+                }
+                else if (Input.GetMouseButtonUp(0))
+                {
+                    ecb.SetComponent(gameManagerEntity,
+                        new GameManagerComponent
+                        {
+                            isDragging = false,
+                            state = GameManagerComponent.State.Playing,
+                            teamToMove = gameManagerArray[gameManagerEntity].teamToMove
+                        }
+                    );
                 }
             }).Run();
     }

@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 [Serializable]
 public struct GameManagerComponent : IComponentData
@@ -12,6 +13,8 @@ public struct GameManagerComponent : IComponentData
         Playing,
         Dead
     }
+
+    public Color teamToMove;
 
     public bool isDragging;
 
