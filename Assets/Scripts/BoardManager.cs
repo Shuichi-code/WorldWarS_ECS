@@ -99,10 +99,7 @@ public class BoardManager : MonoBehaviour
     {
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
-            typeof(CellComponent),
-            typeof(RenderMesh),
-            typeof(RenderBounds),
-            typeof(LocalToWorld)
+            typeof(CellComponent)
         );
         boardArray = new NativeArray<Entity>(maxRow * maxCol, Allocator.Temp);
         entityManager.CreateEntity(entityArchetype, boardArray);
@@ -120,13 +117,13 @@ public class BoardManager : MonoBehaviour
                         Value = spawnPosition
                     }
                 );
-                entityManager.SetSharedComponentData(boardArray[boardIndex],
+                /*entityManager.SetSharedComponentData(boardArray[boardIndex],
                     new RenderMesh
                     {
                         mesh = quadMesh,
                         material = cellImage
                     }
-                );
+                );*/
 
                 boardIndex++;
             }
@@ -223,12 +220,7 @@ public class BoardManager : MonoBehaviour
                     piecePosition = new float3(cellposition[i - 18, 7].x, cellposition[i - 18, 7].y, cellposition[i - 18, 7].z - 10f);
                 }
             }
-            entityManager.SetComponentData(pieceArray[i],
-                 new Translation
-                 {
-                     Value = piecePosition
-                 }
-            );
+            entityManager.SetComponentData(pieceArray[i], new Translation { Value = piecePosition });
             entityManager.SetComponentData(pieceArray[i],
                  new PieceComponent
                  {

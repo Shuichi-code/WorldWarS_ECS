@@ -20,7 +20,7 @@ public class RemoveHighlightsSystem : SystemBase
     }
     protected override void OnUpdate()
     {
-        EntityQuery gameManagerQuery = GetEntityQuery(typeof(GameManagerComponent));
+        EntityQuery gameManagerQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
         Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
         ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
 

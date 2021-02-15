@@ -63,12 +63,8 @@ public class CheckCellStateSystem : SystemBase
                             if (!HasComponent<PieceOnCellComponent>(cellNeighborEntity))
                             {
                                 //Debug.Log("Highlighting the neighbor cells!");
-                                Entity highlightedCell = ecb.CreateEntity();
-                                ecb.AddComponent<HighlightedTag>(highlightedCell);
-                                ecb.AddComponent<Translation>(highlightedCell);
-                                //TODO: Find a way to highlight the cells
-                                ecb.SetComponent<Translation>(highlightedCell, new Translation { Value = translationArray[cellNeighborEntity].Value});
-                                //ecb.AddComponent<HighlightedTag>(cellNeighborEntity);
+                                //highlight the cells
+                                ecb.AddComponent<HighlightedTag>(cellNeighborEntity);
                             }
                             else
                             {

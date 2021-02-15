@@ -41,14 +41,14 @@ public class PiecePickupSystem : SystemBase
             {
                 if (Input.GetMouseButtonDown(0))
                 {
+                    Color teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove;
                     if ((translation.Value.x == Math.Round(worldPos.x)) &&
                     (translation.Value.y == Math.Round(worldPos.y)) &&
-                    //teamColorToMove == pieceComponent.teamColor &&
+                    teamColorToMove == pieceComponent.teamColor &&
                     !gameManagerArray[gameManagerEntity].isDragging)
                     {
                         if (!HasComponent<SelectedTag>(pieceEntity))
                         {
-                            //Debug.Log("Found a piece!");
                             ecb.AddComponent<SelectedTag>(pieceEntity);
                         }
 
@@ -60,19 +60,7 @@ public class PiecePickupSystem : SystemBase
                                 teamToMove = gameManagerArray[gameManagerEntity].teamToMove
                             }
                         );
-                        //teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove == Color.black ? Color.white : Color.black;
                     }
-                }
-                else if (Input.GetMouseButtonUp(0))
-                {
-                    ecb.SetComponent(gameManagerEntity,
-                        new GameManagerComponent
-                        {
-                            isDragging = false,
-                            state = GameManagerComponent.State.Playing,
-                            teamToMove = gameManagerArray[gameManagerEntity].teamToMove
-                        }
-                    );
                 }
             }).Run();
     }

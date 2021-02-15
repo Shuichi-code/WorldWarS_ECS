@@ -10,11 +10,6 @@ using UnityEngine;
 //[DisableAutoCreation]
 public class RenderSystem : SystemBase
 {
-    //private Mesh quadMesh;
-    private Material cellImage;
-    private Material highlightedImage;
-    private Material enemycellImage;
-
     private EntityCommandBufferSystem entityCommandBufferSystem;
 
     private System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
@@ -38,22 +33,41 @@ public class RenderSystem : SystemBase
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
-        //quadMesh = BoardManager.GetInstance().quadMesh;
-        //cellImage = BoardManager.GetInstance().cellImage;
-        //highlightedImage = BoardManager.GetInstance().highlightedImage;
-        //enemycellImage = BoardManager.GetInstance().enemyCellImage;
         entityCommandBufferSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
     protected override void OnUpdate() {
         EntityCommandBuffer entityCommandBuffer = entityCommandBufferSystem.CreateCommandBuffer();
-        //Mesh quadMesh = BoardManager.GetInstance().quadMesh;
-        //code for rendering highlighted cells
 
+        //code for rendering normal cells
+        Entities.
+        WithoutBurst().
+        //WithAll<HighlightedTag>().
+        ForEach((in CellComponent cellComponent, in Translation translation) => {
+            Mesh quadMesh = BoardManager.GetInstance().quadMesh;
+            Material highlightedImage = BoardManager.GetInstance().cellImage;
+            Graphics.DrawMesh(
+                quadMesh,
+                translation.Value,
+                Quaternion.identity,
+                highlightedImage,
+                0
+           );
+        }).Run();
+
+        //code for rendering highlighted cells
         Entities.
             WithoutBurst().
             //WithAll<HighlightedTag>().
-            ForEach((Entity highlightedCellEntity, ref HighlightedTag highlightedTag, in Translation translation) => {
-
+            ForEach((in HighlightedTag highlightedTag, in Translation translation) => {
+                Mesh quadMesh = BoardManager.GetInstance().quadMesh;
+                Material highlightedImage = BoardManager.GetInstance().highlightedImage;
+                Graphics.DrawMesh(
+                    quadMesh,
+                    translation.Value,
+                    Quaternion.identity,
+                    highlightedImage,
+                    0
+               );
             }).Run();
 
         //code for rendering enemy cells
@@ -61,8 +75,8 @@ public class RenderSystem : SystemBase
             WithoutBurst().
             WithAll<EnemyCellTag>().
             ForEach((ref Translation translation) => {
-                Mesh quadMesh = new Mesh();
-                quadMesh.name = "Quad";
+                Mesh quadMesh = BoardManager.GetInstance().quadMesh;
+                Material enemycellImage = BoardManager.GetInstance().enemyCellImage;
                 Graphics.DrawMesh(
                     quadMesh,
                     translation.Value,

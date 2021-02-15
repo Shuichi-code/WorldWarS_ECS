@@ -24,23 +24,19 @@ public class PiecePutDownSystem : SystemBase
         Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
         ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
 
-        EntityQuery highlightedTagQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>());
-        EntityQuery enemyCellQuery = GetEntityQuery(ComponentType.ReadOnly<EnemyCellTag>());
-
-        NativeArray<Entity> highLightedCells = highlightedTagQuery.ToEntityArray(Allocator.TempJob);
-        NativeArray<Entity> enemyCells = enemyCellQuery.ToEntityArray(Allocator.TempJob);
-
         EntityQuery pieceOnCellQuery = GetEntityQuery(typeof(PieceOnCellComponent), typeof(CellComponent));
         NativeArray<Entity> pieceOnCellArray = pieceOnCellQuery.ToEntityArray(Allocator.TempJob);
         ComponentDataFromEntity<Translation> cellTranslationDataArray = GetComponentDataFromEntity<Translation>();
+        ComponentDataFromEntity<PieceComponent> pieceComponentDataArray = GetComponentDataFromEntity<PieceComponent>();
 
-        EntityQuery allCellQuery = GetEntityQuery(typeof(CellComponent), typeof(Translation));
+        EntityQuery allCellQuery = GetEntityQuery(typeof(CellComponent));
         NativeArray<Entity> cellEntityArray = allCellQuery.ToEntityArray(Allocator.TempJob);
-        NativeArray<Translation> cellTranslationArray = allCellQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
+        BufferFromEntity<CellNeighborBufferElement> cellNeighborBufferEntity = GetBufferFromEntity<CellNeighborBufferElement>();
+        ComponentDataFromEntity<PieceOnCellComponent> pieceOnCellComponentDataArray = GetComponentDataFromEntity<PieceOnCellComponent>();
 
         //TODO: Add functionality to change the piececomponent reference of the cell to the new one
         Entities.
-            WithAll<SelectedTag, PieceTag>().
+            WithAll<SelectedTag>().
             ForEach((Entity pieceEntity, ref Translation translation, ref PieceComponent piece)=> {
                 if (Input.GetMouseButtonUp(0))
                 {
@@ -50,81 +46,85 @@ public class PiecePutDownSystem : SystemBase
                     float originalPieceXCoordinate = (float)Math.Round(piece.originalCellPosition.x);
                     float originalPieceYCoordinate = (float)Math.Round(piece.originalCellPosition.y);
 
-                    //Declare the list of allowable moves
-                    NativeArray<float3> allowableCellArray = new NativeArray<float3>(4, Allocator.Temp);
-                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
-                    allowableCellArray[0] = new float3(originalPieceXCoordinate, originalPieceYCoordinate + 1f, translation.Value.z);
-                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y + 1, dragPiecePosition.Value.z));
-                    allowableCellArray[1] = new float3(originalPieceXCoordinate + 1f, originalPieceYCoordinate, translation.Value.z);
-                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x + 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
-                    allowableCellArray[2] = new float3(originalPieceXCoordinate, originalPieceYCoordinate - 1f, translation.Value.z);
-                    //surroundCellList.Add(new float3(dragPiecePosition.Value.x - 1, dragPiecePosition.Value.y - 1, dragPiecePosition.Value.z));
-                    allowableCellArray[3] = new float3(originalPieceXCoordinate - 1f, originalPieceYCoordinate, translation.Value.z);
+                    var foundMove = false;
 
-                    for (int i = 0; i < allowableCellArray.Length; i++)
+                    Color teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove;
+                    //iterate on all of the possible cells
+                    for (int cellIndex = 0; cellIndex < cellEntityArray.Length; cellIndex++)
                     {
-                        //if the piece lands in a valid cell, place it on the valid cell
-                        if (allowableCellArray[i].x == pieceXCoordinate && allowableCellArray[i].y == pieceYCoordinate)
+                        //get the neighbor buffer of the original cell
+                        Entity currentCellEntity = cellEntityArray[cellIndex];
+                        Translation currentCellTranslation = cellTranslationDataArray[currentCellEntity];
+                        if (piece.originalCellPosition.x == currentCellTranslation.Value.x && piece.originalCellPosition.y == currentCellTranslation.Value.y )
                         {
-                            translation.Value.x = pieceXCoordinate;
-                            translation.Value.y = pieceYCoordinate;
-
-                            //Remove the PieceOnCellComponent from the original cell
-                            for (int pieceOnCellIndex = 0; pieceOnCellIndex < pieceOnCellArray.Length; pieceOnCellIndex++)
+                            //iterate on all neighbor cell of the original cell
+                            DynamicBuffer<CellNeighborBufferElement> cellNeighborBuffer = cellNeighborBufferEntity[cellEntityArray[cellIndex]];
+                            for (int cellNeighborIndex = 0; cellNeighborIndex < cellNeighborBuffer.Length; cellNeighborIndex++)
                             {
-                                Translation cellPosition = cellTranslationDataArray[pieceOnCellArray[pieceOnCellIndex]];
-                                if (piece.originalCellPosition.x == cellPosition.Value.x && piece.originalCellPosition.y == cellPosition.Value.y)
-                                {
-                                    ecb.RemoveComponent<PieceOnCellComponent>(pieceOnCellArray[pieceOnCellIndex]);
-                                    break;
-                                }
-                            }
+                                //if piece lands on a neighbor cell with no piece on it, the move is valid
+                                Entity cellNeighborEntity = cellNeighborBuffer[cellNeighborIndex].cellNeighbor;
+                                Translation cellNeighborTranslation = cellTranslationDataArray[cellNeighborEntity];
 
-                            piece.originalCellPosition.x = pieceXCoordinate;
-                            piece.originalCellPosition.y = pieceYCoordinate;
-
-                            //Add the PieceOnCellComponent on the new cell and add this pieceentity as reference
-                            for (int cellIndex = 0; cellIndex < cellTranslationArray.Length; cellIndex++)
-                            {
-                                if(translation.Value.x == cellTranslationArray[cellIndex].Value.x && translation.Value.y == cellTranslationArray[cellIndex].Value.y)
+                                if (cellNeighborTranslation.Value.x == pieceXCoordinate &&
+                                cellNeighborTranslation.Value.y == pieceYCoordinate &&
+                                (!HasComponent<PieceOnCellComponent>(cellNeighborEntity)|| HasComponent<EnemyCellTag>(cellNeighborEntity)
+                                ))
                                 {
-                                    Entity cellEntity = cellEntityArray[cellIndex];
-                                    ecb.AddComponent<PieceOnCellComponent>(cellEntity);
-                                    ecb.SetComponent(cellEntity, new PieceOnCellComponent
+                                    if (HasComponent<EnemyCellTag>(cellNeighborEntity))
+                                    {
+                                        //pass the pieces to the arbiter entity
+                                        int cellNeighborPieceRank = pieceComponentDataArray[pieceOnCellComponentDataArray[cellNeighborEntity].piece].pieceRank;
+                                        Entity arbiter = ecb.CreateEntity();
+                                        ecb.AddComponent<ArbiterComponent>(arbiter);
+                                        ecb.SetComponent(arbiter, new ArbiterComponent {
+                                            attackingPieceEntity = pieceEntity,
+                                            defendingPieceEntity = pieceOnCellComponentDataArray[cellNeighborEntity].piece,
+                                            attackingPiecerank = piece.pieceRank,
+                                            defendingPieceRank = cellNeighborPieceRank,
+                                            cellBattleGround = cellNeighborEntity
+                                        });
+                                    }
+
+                                    foundMove = true;
+                                    translation.Value.x = pieceXCoordinate;
+                                    translation.Value.y = pieceYCoordinate;
+
+                                    //Remove the PieceOnCellComponent from the original cell
+                                    ecb.RemoveComponent<PieceOnCellComponent>(currentCellEntity);
+
+                                    piece.originalCellPosition.x = pieceXCoordinate;
+                                    piece.originalCellPosition.y = pieceYCoordinate;
+
+                                    //Add the PieceOnCellComponent on the new cell and add this pieceentity as reference
+                                    ecb.AddComponent<PieceOnCellComponent>(cellNeighborEntity);
+                                    ecb.SetComponent(cellNeighborEntity, new PieceOnCellComponent
                                     {
                                         piece = pieceEntity
                                     });
+
+                                    //Change the teamcolor to the other team
+                                    teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove == Color.white ? Color.black : Color.white;
+                                    break;
+                                }
+                                //if the piece lands in an invalid cell, return to original cell
+                                if (!foundMove)
+                                {
+                                    translation.Value.x = piece.originalCellPosition.x;
+                                    translation.Value.y = piece.originalCellPosition.y;
                                 }
                             }
-
-                            //Change the teamcolor to the other team
-                            ecb.SetComponent<GameManagerComponent>(gameManagerEntity, new GameManagerComponent {
-                                isDragging = false,
-                                state = GameManagerComponent.State.Playing,
-                                teamToMove = gameManagerArray[gameManagerEntity].teamToMove == Color.black ? Color.white : Color.black
-                             });
-                            break;
-                        }
-                        //if the piece lands in an invalid cell, return to original cell
-                        else
-                        {
-                            translation.Value.x = piece.originalCellPosition.x;
-                            translation.Value.y = piece.originalCellPosition.y;
-                            ecb.SetComponent<GameManagerComponent>(gameManagerEntity, new GameManagerComponent
-                            {
-                                isDragging = false,
-                                state = GameManagerComponent.State.Playing,
-                                teamToMove = gameManagerArray[gameManagerEntity].teamToMove
-                            });
                         }
                     }
+                    ecb.SetComponent<GameManagerComponent>(gameManagerEntity, new GameManagerComponent
+                    {
+                        isDragging = false,
+                        state = GameManagerComponent.State.Playing,
+                        teamToMove = teamColorToMove
+                    });
                     ecb.RemoveComponent<SelectedTag>(pieceEntity);
                 }
         }).Run();
-        highLightedCells.Dispose();
-        enemyCells.Dispose();
         pieceOnCellArray.Dispose();
         cellEntityArray.Dispose();
-        cellTranslationArray.Dispose();
     }
 }
