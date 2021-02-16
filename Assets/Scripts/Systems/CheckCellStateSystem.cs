@@ -12,11 +12,6 @@ using UnityEngine;
 public class CheckCellStateSystem : SystemBase
 {
     private EntityCommandBufferSystem entityCommandBuffer;
-    private EntityQuery selectedPieceQuery;
-    private Entity dragPieceEntity;
-    private EntityManager entityManager;
-    PieceComponent dragPiece;
-    Translation dragPiecePosition;
 
     protected override void OnCreate()
     {

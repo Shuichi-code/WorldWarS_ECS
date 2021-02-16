@@ -74,7 +74,7 @@ public class RenderSystem : SystemBase
         Entities.
             WithoutBurst().
             WithAll<EnemyCellTag>().
-            ForEach((ref Translation translation) => {
+            ForEach((in Translation translation) => {
                 Mesh quadMesh = BoardManager.GetInstance().quadMesh;
                 Material enemycellImage = BoardManager.GetInstance().enemyCellImage;
                 Graphics.DrawMesh(
@@ -82,6 +82,22 @@ public class RenderSystem : SystemBase
                     translation.Value,
                     Quaternion.identity,
                     enemycellImage,
+                    0
+               );
+            }).Run();
+
+        //code for rendering highlighted cells
+        Entities.
+            WithoutBurst().
+            //WithAll<HighlightedTag>().
+            ForEach((in PieceComponent pieceComponent, in Translation translation) => {
+                Mesh quadMesh = BoardManager.GetInstance().quadMesh;
+                Material highlightedImage = BoardManager.GetInstance().highlightedImage;
+                Graphics.DrawMesh(
+                    quadMesh,
+                    translation.Value,
+                    Quaternion.identity,
+                    Resources.Load(mPieceRank[pieceComponent.pieceRank], typeof(Material)) as Material,
                     0
                );
             }).Run();

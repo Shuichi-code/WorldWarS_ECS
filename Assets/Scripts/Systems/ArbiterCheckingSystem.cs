@@ -1,14 +1,23 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 //[UpdateAfter(typeof(PiecePutDownSystem))]
 public class ArbiterCheckingSystem : SystemBase
 {
     private EntityCommandBufferSystem entityCommandBufferSystem;
+
+    public event GameWinnerDelegate OnGameWin;
+    public delegate void GameWinnerDelegate(Color winningColor);
+
+    public struct GameFinishedEventComponent : IComponentData {
+        public Color winningTeamColor;
+    };
 
     protected override void OnStartRunning()
     {
@@ -18,7 +27,15 @@ public class ArbiterCheckingSystem : SystemBase
     protected override void OnUpdate()
     {
         EntityCommandBuffer entityCommandBuffer = entityCommandBufferSystem.CreateCommandBuffer();
+        EntityArchetype eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
+
         ComponentDataFromEntity<PieceOnCellComponent> pieceOnCellComponentDataArray = GetComponentDataFromEntity<PieceOnCellComponent>();
+        ComponentDataFromEntity<PieceComponent> pieceComponentDataArray = GetComponentDataFromEntity<PieceComponent>();
+
+        EntityQuery gameManagerQuery = GetEntityQuery(typeof(GameManagerComponent));
+        Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
+        ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
+
 
         Entities.ForEach((Entity entity, ref ArbiterComponent arbiter) => {
             int attackingRank = arbiter.attackingPiecerank;
@@ -33,6 +50,14 @@ public class ArbiterCheckingSystem : SystemBase
                 ((attackingRank < defendingRank) && !(attackingRank == 0 && defendingRank == 13))
                 )
             {
+                if(attackingRank == 14 && defendingRank == 14)
+                {
+                    //get the attacking team flag's color and declare him the winner
+                    Color winningColor = pieceComponentDataArray[attackingEntity].teamColor;
+                    Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
+                    entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = winningColor });
+                    //Debug.Log("Sending out the winner team!");
+                }
                 //return the defending rank
                 //NativeArray<Entity> deadEntities = new NativeArray<Entity>(1, Allocator.Temp);
                 entityCommandBuffer.DestroyEntity(defendingEntity);
@@ -56,9 +81,16 @@ public class ArbiterCheckingSystem : SystemBase
                 entityCommandBuffer.DestroyEntity(attackingEntity);
                 entityCommandBuffer.DestroyEntity(defendingEntity);
             }
-
             entityCommandBuffer.DestroyEntity(entity);
             deadEntities.Dispose();
-        }).Run();
+        }).Schedule();
+
+        Entities.
+            WithoutBurst().
+            ForEach((in GameFinishedEventComponent eventComponent)=> {
+                //Debug.Log("Transmitting event data: Winner is: "+eventComponent.winningTeamColor);
+                OnGameWin?.Invoke(eventComponent.winningTeamColor);
+            }).Run();
+        EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
     }
 }

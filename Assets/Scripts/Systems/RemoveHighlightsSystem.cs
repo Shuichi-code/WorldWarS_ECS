@@ -12,7 +12,6 @@ public class RemoveHighlightsSystem : SystemBase
 {
     private EntityCommandBufferSystem entityCommandBuffer;
 
-
     protected override void OnStartRunning()
     {
         base.OnStartRunning();

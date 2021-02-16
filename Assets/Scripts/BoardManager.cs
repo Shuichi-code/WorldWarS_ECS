@@ -14,7 +14,6 @@ public class BoardManager : MonoBehaviour
     {
         return instance;
     }
-
     public bool isSelecting { get; set; } = false;
     public Mesh quadMesh;
     public Material cellImage;
@@ -174,10 +173,10 @@ public class BoardManager : MonoBehaviour
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
             typeof(PieceComponent),
-            typeof(PieceTag),
-            typeof(RenderMesh),
-            typeof(RenderBounds),
-            typeof(LocalToWorld)
+            typeof(PieceTag)//,
+            //typeof(RenderMesh),
+            //typeof(RenderBounds),
+            //typeof(LocalToWorld)
         );
 
         pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
@@ -229,10 +228,12 @@ public class BoardManager : MonoBehaviour
                      teamColor = color
                  }
              );
-            entityManager.SetSharedComponentData(pieceArray[i], new RenderMesh {
+
+            //code for setting the rendermesh
+            /*entityManager.SetSharedComponentData(pieceArray[i], new RenderMesh {
                 mesh = quadMesh,
                 material = Resources.Load(mPieceRank[mPieceOrder[i]], typeof(Material)) as Material
-            });
+            });*/
 
             //setting the pieces on the cell as reference
             for (int j = 0; j < cellPositionArray.Length; j++)
