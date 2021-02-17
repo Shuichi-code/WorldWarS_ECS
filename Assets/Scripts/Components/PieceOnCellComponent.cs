@@ -6,5 +6,5 @@ using Unity.Mathematics;
 [Serializable]
 public struct PieceOnCellComponent : IComponentData
 {
-    public Entity piece;
+    public Entity pieceEntity { get; set; }
 }

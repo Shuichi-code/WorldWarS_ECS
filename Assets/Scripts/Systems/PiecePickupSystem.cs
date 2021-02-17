@@ -39,7 +39,7 @@ public class PiecePickupSystem : SystemBase
             WithAll<PieceTag>().
             ForEach((Entity pieceEntity, ref Translation translation, in PieceComponent pieceComponent) =>
             {
-                if (Input.GetMouseButtonDown(0))
+                if (Input.GetMouseButtonDown(0) && gameManagerArray[gameManagerEntity].state == GameManagerComponent.State.Playing)
                 {
                     Color teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove;
                     if ((translation.Value.x == Math.Round(worldPos.x)) &&

@@ -34,7 +34,8 @@ public class PiecePutDownSystem : SystemBase
         BufferFromEntity<CellNeighborBufferElement> cellNeighborBufferEntity = GetBufferFromEntity<CellNeighborBufferElement>();
         ComponentDataFromEntity<PieceOnCellComponent> pieceOnCellComponentDataArray = GetComponentDataFromEntity<PieceOnCellComponent>();
 
-        //TODO: Add functionality to change the piececomponent reference of the cell to the new one
+        EntityArchetype eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
+
         Entities.
             WithAll<SelectedTag>().
             ForEach((Entity pieceEntity, ref Translation translation, ref PieceComponent piece)=> {
@@ -49,10 +50,11 @@ public class PiecePutDownSystem : SystemBase
                     var foundMove = false;
 
                     Color teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove;
+
                     //iterate on all of the possible cells
                     for (int cellIndex = 0; cellIndex < cellEntityArray.Length; cellIndex++)
                     {
-                        //get the neighbor buffer of the original cell
+                        //get the neighbor buffer of the original cell that the dragged piece was on
                         Entity currentCellEntity = cellEntityArray[cellIndex];
                         Translation currentCellTranslation = cellTranslationDataArray[currentCellEntity];
                         if (piece.originalCellPosition.x == currentCellTranslation.Value.x && piece.originalCellPosition.y == currentCellTranslation.Value.y )
@@ -70,15 +72,16 @@ public class PiecePutDownSystem : SystemBase
                                 (!HasComponent<PieceOnCellComponent>(cellNeighborEntity)|| HasComponent<EnemyCellTag>(cellNeighborEntity)
                                 ))
                                 {
+                                    //or if piece lands on an enemy cell then the move is valid and combat occurs
                                     if (HasComponent<EnemyCellTag>(cellNeighborEntity))
                                     {
-                                        //pass the pieces to the arbiter entity
-                                        int cellNeighborPieceRank = pieceComponentDataArray[pieceOnCellComponentDataArray[cellNeighborEntity].piece].pieceRank;
+                                        //pass the pieces to the arbiter entity to determine combat winner
+                                        int cellNeighborPieceRank = pieceComponentDataArray[pieceOnCellComponentDataArray[cellNeighborEntity].pieceEntity].pieceRank;
                                         Entity arbiter = ecb.CreateEntity();
                                         ecb.AddComponent<ArbiterComponent>(arbiter);
                                         ecb.SetComponent(arbiter, new ArbiterComponent {
                                             attackingPieceEntity = pieceEntity,
-                                            defendingPieceEntity = pieceOnCellComponentDataArray[cellNeighborEntity].piece,
+                                            defendingPieceEntity = pieceOnCellComponentDataArray[cellNeighborEntity].pieceEntity,
                                             attackingPiecerank = piece.pieceRank,
                                             defendingPieceRank = cellNeighborPieceRank,
                                             cellBattleGround = cellNeighborEntity
@@ -99,8 +102,18 @@ public class PiecePutDownSystem : SystemBase
                                     ecb.AddComponent<PieceOnCellComponent>(cellNeighborEntity);
                                     ecb.SetComponent(cellNeighborEntity, new PieceOnCellComponent
                                     {
-                                        piece = pieceEntity
+                                        pieceEntity = pieceEntity
                                     });
+
+                                    //if piece is a flag and lands on the other side of the board, player wins
+                                    Color pieceOnCellColor = piece.teamColor;
+                                    if ((HasComponent<LastCellsForBlackTag>(cellNeighborEntity) && pieceOnCellColor == Color.black) ||
+                                    (HasComponent<LastCellsForWhiteTag>(cellNeighborEntity) && pieceOnCellColor == Color.white))
+                                    {
+                                        //player wins
+                                        Entity eventEntity = ecb.CreateEntity(eventEntityArchetype);
+                                        ecb.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = pieceOnCellColor });
+                                    }
 
                                     //Change the teamcolor to the other team
                                     teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove == Color.white ? Color.black : Color.white;
@@ -115,6 +128,8 @@ public class PiecePutDownSystem : SystemBase
                             }
                         }
                     }
+
+                    //Set the GameManager to let the other team move
                     ecb.SetComponent<GameManagerComponent>(gameManagerEntity, new GameManagerComponent
                     {
                         isDragging = false,
@@ -122,6 +137,7 @@ public class PiecePutDownSystem : SystemBase
                         teamToMove = teamColorToMove
                     });
                     ecb.RemoveComponent<SelectedTag>(pieceEntity);
+                    //Debug.Log(gameManagerArray[gameManagerEntity].state);
                 }
         }).Run();
         pieceOnCellArray.Dispose();

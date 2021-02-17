@@ -15,10 +15,6 @@ public class ArbiterCheckingSystem : SystemBase
     public event GameWinnerDelegate OnGameWin;
     public delegate void GameWinnerDelegate(Color winningColor);
 
-    public struct GameFinishedEventComponent : IComponentData {
-        public Color winningTeamColor;
-    };
-
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
@@ -50,7 +46,7 @@ public class ArbiterCheckingSystem : SystemBase
                 ((attackingRank < defendingRank) && !(attackingRank == 0 && defendingRank == 13))
                 )
             {
-                if(attackingRank == 14 && defendingRank == 14)
+                if((attackingRank == 14 && defendingRank == 14) || defendingRank == 14 )
                 {
                     //get the attacking team flag's color and declare him the winner
                     Color winningColor = pieceComponentDataArray[attackingEntity].teamColor;
@@ -61,16 +57,23 @@ public class ArbiterCheckingSystem : SystemBase
                 //return the defending rank
                 //NativeArray<Entity> deadEntities = new NativeArray<Entity>(1, Allocator.Temp);
                 entityCommandBuffer.DestroyEntity(defendingEntity);
-                entityCommandBuffer.SetComponent<PieceOnCellComponent>(arbiter.cellBattleGround, new PieceOnCellComponent { piece = attackingEntity });
+                entityCommandBuffer.SetComponent<PieceOnCellComponent>(arbiter.cellBattleGround, new PieceOnCellComponent { pieceEntity = attackingEntity });
                 //TODO: Add function that checks if Flag is on the opposite side of the board
             }
 
             //if attacking rank is lower than defending rank, defending side wins
             else if ((attackingRank > defendingRank) || (attackingRank == 0 && defendingRank == 13))
             {
+                //if attacking rank is flag, opposite side loses
+                if(attackingRank == 14)
+                {
+                    Color winningColor = pieceComponentDataArray[defendingEntity].teamColor;
+                    Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
+                    entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = winningColor });
+                }
                 //NativeArray<Entity> deadEntities = new NativeArray<Entity>(1, Allocator.Temp);
                 entityCommandBuffer.DestroyEntity(attackingEntity);
-                entityCommandBuffer.SetComponent<PieceOnCellComponent>(arbiter.cellBattleGround, new PieceOnCellComponent { piece = defendingEntity });
+                entityCommandBuffer.SetComponent<PieceOnCellComponent>(arbiter.cellBattleGround, new PieceOnCellComponent { pieceEntity = defendingEntity });
             }
 
             //if attacking rank is equal than defending rank, both sides lose
@@ -88,7 +91,6 @@ public class ArbiterCheckingSystem : SystemBase
         Entities.
             WithoutBurst().
             ForEach((in GameFinishedEventComponent eventComponent)=> {
-                //Debug.Log("Transmitting event data: Winner is: "+eventComponent.winningTeamColor);
                 OnGameWin?.Invoke(eventComponent.winningTeamColor);
             }).Run();
         EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));

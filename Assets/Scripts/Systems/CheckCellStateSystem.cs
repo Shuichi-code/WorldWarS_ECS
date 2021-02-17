@@ -42,7 +42,6 @@ public class CheckCellStateSystem : SystemBase
             ForEach((in SelectedTag selected, in PieceComponent dragPiece)=> {
                 for (int cellIndex = 0; cellIndex < cellArrayPositions.Length; cellIndex++)
                 {
-                    //Debug.Log("Iterating through the cells!");
                     //Get the cell where the piece is currently staying
                     if (dragPiece.originalCellPosition.x == cellArrayPositions[cellIndex].Value.x &&
                     dragPiece.originalCellPosition.y == cellArrayPositions[cellIndex].Value.y)// &&
@@ -64,7 +63,7 @@ public class CheckCellStateSystem : SystemBase
                             else
                             {
                                 //Check if the cell has an enemy piece, if it is add a selected enemy tag
-                                Entity piece = pieceOnCellArray[cellNeighborEntity].piece;
+                                Entity piece = pieceOnCellArray[cellNeighborEntity].pieceEntity;
                                 if (pieceArray[piece].teamColor != dragPiece.teamColor)
                                 {
                                     ecb.AddComponent<EnemyCellTag>(cellNeighborEntity);

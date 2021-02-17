@@ -14,7 +14,7 @@ public class BoardManager : MonoBehaviour
     {
         return instance;
     }
-    public bool isSelecting { get; set; } = false;
+
     public Mesh quadMesh;
     public Material cellImage;
     public Material highlightedImage;
@@ -22,7 +22,6 @@ public class BoardManager : MonoBehaviour
     private int boardIndex = 0;
     private float3 piecePosition;
 
-    [SerializeField]
     NativeArray<Entity> boardArray;
     NativeArray<Entity> pieceArray;
 
@@ -30,10 +29,8 @@ public class BoardManager : MonoBehaviour
     EntityArchetype entityGameManagerArchetype;
     EntityArchetype entityArchetype;
 
-    //Matrix4x4 matrix;
-
-    const int maxRow = 9;
-    const int maxCol = 8;
+    const int maxRowCells = 9;
+    const int maxColumnCells = 8;
 
     //default arrangement of pieces in the board. numbers represent the piecerank
     int[] mPieceOrder = new int[21]
@@ -43,7 +40,7 @@ public class BoardManager : MonoBehaviour
         13,13,13,13, 0, 0, 14
     };
 
-    float3[,] cellposition = new float3[maxRow,maxCol];
+    float3[,] cellposition = new float3[maxRowCells,maxColumnCells];
 
     private System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
     {
@@ -63,7 +60,8 @@ public class BoardManager : MonoBehaviour
         { 13 ,"Pvt"},
         { 14 ,"Flg"},
     };
-    float3[] cellPositionArray = new float3[maxRow*maxCol];
+
+    float3[] cellPositionArray = new float3[maxRowCells*maxColumnCells];
     private float3[] neighborCellPositionArray = new float3[4];
     float3 spawnPosition;
 
@@ -72,9 +70,7 @@ public class BoardManager : MonoBehaviour
         instance = this;
 
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        entityGameManagerArchetype = entityManager.CreateArchetype(
-                typeof(GameManagerComponent)
-        );
+        entityGameManagerArchetype = entityManager.CreateArchetype(typeof(GameManagerComponent));
         Entity gameManager = entityManager.CreateEntity(entityGameManagerArchetype);
         entityManager.SetComponentData(gameManager,
             new GameManagerComponent
@@ -83,8 +79,6 @@ public class BoardManager : MonoBehaviour
                 isDragging = false,
                 teamToMove = Color.white
             });
-        //this code is for Graphics.DrawMeshInstanced
-        //matrix = new Matrix4x4();
 
         createBoard();
         createPieces(Color.white);
@@ -94,18 +88,18 @@ public class BoardManager : MonoBehaviour
     /// <summary>
     /// Creates the board by instantiating cell entities based on maxRow vs maxCol
     /// </summary>
-    private void createBoard()
+    public void createBoard()
     {
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
             typeof(CellComponent)
         );
-        boardArray = new NativeArray<Entity>(maxRow * maxCol, Allocator.Temp);
+        boardArray = new NativeArray<Entity>(maxRowCells * maxColumnCells, Allocator.Temp);
         entityManager.CreateEntity(entityArchetype, boardArray);
         boardIndex = 0;
-        for (int columns = 0; columns < maxCol; columns++)
+        for (int columns = 0; columns < maxColumnCells; columns++)
         {
-            for (int rows = 0; rows < maxRow; rows++)
+            for (int rows = 0; rows < maxRowCells; rows++)
             {
                 spawnPosition = new float3(-4f+rows, -4f+columns, 50);
                 cellPositionArray[boardIndex] = spawnPosition;
@@ -116,13 +110,15 @@ public class BoardManager : MonoBehaviour
                         Value = spawnPosition
                     }
                 );
-                /*entityManager.SetSharedComponentData(boardArray[boardIndex],
-                    new RenderMesh
-                    {
-                        mesh = quadMesh,
-                        material = cellImage
-                    }
-                );*/
+                //if cells are at the edge rows then add the last cell component tag
+                if(columns == maxColumnCells - maxColumnCells)
+                {
+                    entityManager.AddComponent(boardArray[boardIndex], typeof(LastCellsForBlackTag));
+                }
+                else if (columns == maxColumnCells - 1)
+                {
+                    entityManager.AddComponent(boardArray[boardIndex], typeof(LastCellsForWhiteTag));
+                }
 
                 boardIndex++;
             }
@@ -135,7 +131,7 @@ public class BoardManager : MonoBehaviour
     /// </summary>
     private void setNeighbors()
     {
-        for(int i = 0; i < maxRow*maxCol; i++ )
+        for(int i = 0; i < maxRowCells*maxColumnCells; i++ )
         {
             float3 currentCellPosition = cellPositionArray[i];
             Entity currentCell = boardArray[i];
@@ -168,15 +164,12 @@ public class BoardManager : MonoBehaviour
     /// <summary>
     /// Instantiates the piece entities
     /// </summary>
-    private void createPieces(Color color)
+    public void createPieces(Color color)
     {
         entityArchetype = entityManager.CreateArchetype(
             typeof(Translation),
             typeof(PieceComponent),
-            typeof(PieceTag)//,
-            //typeof(RenderMesh),
-            //typeof(RenderBounds),
-            //typeof(LocalToWorld)
+            typeof(PieceTag)
         );
 
         pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
@@ -212,7 +205,6 @@ public class BoardManager : MonoBehaviour
                 else if (i >= 9 && i < 18)
                 {
                     piecePosition = new float3(cellposition[i - 9, 6].x, cellposition[i - 9, 6].y, cellposition[i - 9, 6].z - 10f);
-                    //Debug.Log(i);;
                 }
                 else
                 {
@@ -229,12 +221,6 @@ public class BoardManager : MonoBehaviour
                  }
              );
 
-            //code for setting the rendermesh
-            /*entityManager.SetSharedComponentData(pieceArray[i], new RenderMesh {
-                mesh = quadMesh,
-                material = Resources.Load(mPieceRank[mPieceOrder[i]], typeof(Material)) as Material
-            });*/
-
             //setting the pieces on the cell as reference
             for (int j = 0; j < cellPositionArray.Length; j++)
             {
@@ -244,7 +230,7 @@ public class BoardManager : MonoBehaviour
                     entityManager.SetComponentData(boardArray[j],
                         new PieceOnCellComponent
                         {
-                            piece = pieceArray[i]
+                            pieceEntity = pieceArray[i]
                         }
                     );
                 }
