@@ -30,9 +30,8 @@ public class GameOverUI : MonoBehaviour
     {
         //Get the GameStateEntity and turn the state into end
         GameManagerComponent gameManagerComponent = entityManager.CreateEntityQuery(typeof(GameManagerComponent)).GetSingleton<GameManagerComponent>();
-        gameManagerComponent.state = GameManagerComponent.State.Dead;
+        gameManagerComponent.state = State.Dead;
         SetSystemsEnabled(false);
-        Debug.Log(gameManagerComponent.state);
 
         //activate the canvas and print the winner
         gameOverCanvas.SetActive(true);
@@ -41,19 +40,35 @@ public class GameOverUI : MonoBehaviour
 
     private void Reset()
     {
-        Debug.Log("Try again button is pressed");
-        entityManager.DestroyEntity(entityManager.CreateEntityQuery((typeof(PieceComponent))));
-        GameManagerComponent gameManagerComponent = entityManager.CreateEntityQuery(typeof(GameManagerComponent)).GetSingleton<GameManagerComponent>();
-        gameManagerComponent.teamToMove = Color.white;
-        BoardManager.GetInstance().createBoard();
-        BoardManager.GetInstance().createPieces(Color.white);
-        BoardManager.GetInstance().createPieces(Color.black);
+        //reset the pieces
+        DestroyBoardAndPieces();
+        Entity gameManagerEntity = entityManager.CreateEntityQuery(typeof(GameManagerComponent)).GetSingletonEntity();
+        entityManager.SetComponentData(gameManagerEntity, new GameManagerComponent
+        {
+            state = State.Playing,
+            isDragging = false,
+            teamToMove = Color.white
+        });
+
+        BoardManager.GetInstance().CreateBoard();
+        BoardManager.GetInstance().CreatePieces(Color.white);
+        BoardManager.GetInstance().CreatePieces(Color.black);
         SetSystemsEnabled(true);
         gameOverCanvas.SetActive(false);
     }
+
+    private void DestroyBoardAndPieces()
+    {
+        entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(CellComponent)));
+        entityManager.DestroyEntity(entityManager.CreateEntityQuery((typeof(PieceComponent))));
+    }
+
     private void SetSystemsEnabled(bool enabled)
     {
         World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PiecePickupSystem>().Enabled = enabled;
+        World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CheckCellStateSystem>().Enabled = enabled;
+        World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CheckFlagPassedSystem>().Enabled = enabled;
+        World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().Enabled = enabled;
     }
 
     // Update is called once per frame

@@ -21,6 +21,7 @@ public class CheckCellStateSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        #region Initializing Data
         EntityQuery gameManagerQuery = GetEntityQuery(typeof(GameManagerComponent));
         Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
         ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
@@ -37,20 +38,20 @@ public class CheckCellStateSystem : SystemBase
         ComponentDataFromEntity<Translation> translationArray = GetComponentDataFromEntity<Translation>();
 
         var ecb = entityCommandBuffer.CreateCommandBuffer();
-
+        #endregion
         Entities.
             ForEach((in SelectedTag selected, in PieceComponent dragPiece)=> {
-                for (int cellIndex = 0; cellIndex < cellArrayPositions.Length; cellIndex++)
+                int cellIndex = 0;
+                while (cellIndex < cellArrayPositions.Length)
                 {
                     //Get the cell where the piece is currently staying
-                    if (dragPiece.originalCellPosition.x == cellArrayPositions[cellIndex].Value.x &&
-                    dragPiece.originalCellPosition.y == cellArrayPositions[cellIndex].Value.y)// &&
-                    //gameManagerArray[gameManagerEntity].isDragging)
+                    if (IsCellMatchWithPiece(dragPiece, ref cellArrayPositions, cellIndex))
                     {
                         //Get the neighbors
                         DynamicBuffer<CellNeighborBufferElement> cellNeighborBuffer = cellNeighborBufferEntity[cellArray[cellIndex]];
                         //Check if the cell is empty, if it is add a highlightedtag
-                        for (int cellNeighborIndex = 0; cellNeighborIndex < cellNeighborBuffer.Length; cellNeighborIndex++)
+                        int cellNeighborIndex = 0;
+                        while (cellNeighborIndex < cellNeighborBuffer.Length)
                         {
                             Entity cellNeighborEntity = cellNeighborBuffer[cellNeighborIndex].cellNeighbor;
                             //Debug.Log("Checking the neighbors");
@@ -69,14 +70,22 @@ public class CheckCellStateSystem : SystemBase
                                     ecb.AddComponent<EnemyCellTag>(cellNeighborEntity);
                                 }
                             }
+                            cellNeighborIndex++;
                         }
                     }
+                    cellIndex++;
                 }
-        }).Run();
+            }).Run();
 
         cellArray.Dispose();
         cellArrayPositions.Dispose();
 
+    }
+
+    private static bool IsCellMatchWithPiece(PieceComponent dragPiece, ref NativeArray<Translation> cellArrayPositions, int cellIndex)
+    {
+        return dragPiece.originalCellPosition.x == cellArrayPositions[cellIndex].Value.x &&
+                            dragPiece.originalCellPosition.y == cellArrayPositions[cellIndex].Value.y;
     }
 }
 

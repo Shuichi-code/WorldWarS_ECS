@@ -1,10 +1,6 @@
-﻿using System;
-using Unity.Burst;
-using Unity.Collections;
+﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
-using Unity.Transforms;
 using UnityEngine;
 
 //[UpdateAfter(typeof(PiecePutDownSystem))]
@@ -12,14 +8,15 @@ public class ArbiterCheckingSystem : SystemBase
 {
     private EntityCommandBufferSystem entityCommandBufferSystem;
 
-    public event GameWinnerDelegate OnGameWin;
     public delegate void GameWinnerDelegate(Color winningColor);
 
+    public event GameWinnerDelegate OnGameWin;
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
         entityCommandBufferSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
+
     protected override void OnUpdate()
     {
         EntityCommandBuffer entityCommandBuffer = entityCommandBufferSystem.CreateCommandBuffer();
@@ -32,67 +29,147 @@ public class ArbiterCheckingSystem : SystemBase
         Entity gameManagerEntity = gameManagerQuery.GetSingletonEntity();
         ComponentDataFromEntity<GameManagerComponent> gameManagerArray = GetComponentDataFromEntity<GameManagerComponent>();
 
+        Entities.ForEach((Entity arbiterEntity, in ArbiterComponent arbiterComponent) =>
+        {
+            #region Intializing Data
 
-        Entities.ForEach((Entity entity, ref ArbiterComponent arbiter) => {
-            int attackingRank = arbiter.attackingPiecerank;
-            int defendingRank = arbiter.defendingPieceRank;
-            Entity attackingEntity = arbiter.attackingPieceEntity;
-            Entity defendingEntity = arbiter.defendingPieceEntity;
-            NativeArray<Entity> deadEntities = new NativeArray<Entity>(2, Allocator.Temp);
+            NativeArray<int> battlingRanksArray = new NativeArray<int>(2, Allocator.Temp);
+            NativeArray<Entity> battlingEntitiesArray = new NativeArray<Entity>(3, Allocator.Temp);
+            NativeArray<Color> battlingColorsArray = new NativeArray<Color>(2, Allocator.Temp);
 
-            //NativeArray<Entity> deadPieces = new NativeArray<Entity>(checkWhichPieceIsLower(attackingRank,defendingRank,attackingEntity,defendingEntity), Allocator.Temp);
-            if ((attackingRank == 14 && defendingRank == 14) ||
-                (attackingRank == 13 && defendingRank == 0) ||
-                ((attackingRank < defendingRank) && !(attackingRank == 0 && defendingRank == 13))
-                )
+            PieceComponent attackingPieceComponent = GetComponent<PieceComponent>(arbiterComponent.attackingPieceEntity);
+            PieceComponent defendingPieceComponent = GetComponent<PieceComponent>(arbiterComponent.defendingPieceEntity);
+
+            battlingRanksArray[0] = attackingPieceComponent.pieceRank;
+            battlingRanksArray[1] = defendingPieceComponent.pieceRank;
+
+            battlingEntitiesArray[0] = arbiterComponent.attackingPieceEntity;
+            battlingEntitiesArray[1] = arbiterComponent.defendingPieceEntity;
+            battlingEntitiesArray[2] = arbiterComponent.cellBattleGround;
+
+            battlingColorsArray[0] = attackingPieceComponent.teamColor;
+            battlingColorsArray[1] = defendingPieceComponent.teamColor;
+
+            #endregion Intializing Data
+
+            NativeArray<Entity> deadPieces = new NativeArray<Entity>(DetermineCombatResult(battlingRanksArray, battlingEntitiesArray, battlingColorsArray, entityCommandBuffer, eventEntityArchetype), Allocator.Temp);
+
+            //destroy the losing piece entities
+            for (int i = 0; i < deadPieces.Length; i++)
             {
-                if((attackingRank == 14 && defendingRank == 14) || defendingRank == 14 )
+                if (!deadPieces[i].Equals(Entity.Null))
                 {
-                    //get the attacking team flag's color and declare him the winner
-                    Color winningColor = pieceComponentDataArray[attackingEntity].teamColor;
-                    Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
-                    entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = winningColor });
-                    //Debug.Log("Sending out the winner team!");
+                    entityCommandBuffer.DestroyEntity(deadPieces[i]);
                 }
-                //return the defending rank
-                //NativeArray<Entity> deadEntities = new NativeArray<Entity>(1, Allocator.Temp);
-                entityCommandBuffer.DestroyEntity(defendingEntity);
-                entityCommandBuffer.SetComponent<PieceOnCellComponent>(arbiter.cellBattleGround, new PieceOnCellComponent { pieceEntity = attackingEntity });
-                //TODO: Add function that checks if Flag is on the opposite side of the board
             }
 
-            //if attacking rank is lower than defending rank, defending side wins
-            else if ((attackingRank > defendingRank) || (attackingRank == 0 && defendingRank == 13))
-            {
-                //if attacking rank is flag, opposite side loses
-                if(attackingRank == 14)
-                {
-                    Color winningColor = pieceComponentDataArray[defendingEntity].teamColor;
-                    Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
-                    entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = winningColor });
-                }
-                //NativeArray<Entity> deadEntities = new NativeArray<Entity>(1, Allocator.Temp);
-                entityCommandBuffer.DestroyEntity(attackingEntity);
-                entityCommandBuffer.SetComponent<PieceOnCellComponent>(arbiter.cellBattleGround, new PieceOnCellComponent { pieceEntity = defendingEntity });
-            }
+            //Make sure all NativeArrays have been disposed
+            deadPieces.Dispose();
+            battlingRanksArray.Dispose();
+            battlingEntitiesArray.Dispose();
+            battlingColorsArray.Dispose();
 
-            //if attacking rank is equal than defending rank, both sides lose
-            else
-            {
-                //NativeArray<Entity> deadEntities = new NativeArray<Entity>(2, Allocator.Temp);
-                entityCommandBuffer.RemoveComponent<PieceOnCellComponent>(arbiter.cellBattleGround);
-                entityCommandBuffer.DestroyEntity(attackingEntity);
-                entityCommandBuffer.DestroyEntity(defendingEntity);
-            }
-            entityCommandBuffer.DestroyEntity(entity);
-            deadEntities.Dispose();
+            entityCommandBuffer.DestroyEntity(arbiterEntity);
         }).Schedule();
 
+        //Triggers the event once the eventcomponent has been created.
         Entities.
             WithoutBurst().
-            ForEach((in GameFinishedEventComponent eventComponent)=> {
+            ForEach((in GameFinishedEventComponent eventComponent) =>
+            {
                 OnGameWin?.Invoke(eventComponent.winningTeamColor);
             }).Run();
         EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
+    }
+
+    private static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype, Color winningColor)
+    {
+        if (winningColor != Color.clear)
+        {
+            Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
+            entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = winningColor });
+        }
+    }
+
+    /// <summary>
+    /// Compares the rank of the pieces in battle and returns an array of pieces to be destroyed
+    /// </summary>
+    /// <param name="rankArray">Array of the attacking and defending ranks</param>
+    /// <param name="entityArray">Array of the attacking and defending entities</param>
+    /// <param name="colorArray">Array of the attacking and defending colors</param>
+    /// <param name="entityCommandBuffer">Command buffer for executing tasks</param>
+    /// <param name="arbiter">ArbiterComopnent</param>
+    /// <param name="eventEntityArchetype">Entity Archetype for the creation of the event component that will trigger if a flag has passed the other side or a flag has been captured</param>
+    /// <returns></returns>
+    private static NativeArray<Entity> DetermineCombatResult(NativeArray<int> rankArray, NativeArray<Entity> entityArray, NativeArray<Color> colorArray, EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype)
+    {
+        #region Intializing Data
+
+        NativeArray<Entity> deadEntities = new NativeArray<Entity>(2, Allocator.Temp);
+        Color winningColor = Color.clear;
+        int attackingRank = rankArray[0];
+        int defendingRank = rankArray[1];
+        Entity attackingEntity = entityArray[0];
+        Entity defendingEntity = entityArray[1];
+        Entity cellBattleGround = entityArray[2];
+        Color attackingColor = colorArray[0];
+        Color defendingColor = colorArray[1];
+
+        #endregion Intializing Data
+
+        if (IsAttackerWInner(attackingRank, defendingRank))
+        {
+            //if a flag is attacking a flag or if the defender is a flag; attacker wins
+            if ((attackingRank == 14 && defendingRank == 14) || defendingRank == 14)
+            {
+                //get the attacking team flag's color and declare him the winner
+                winningColor = attackingColor;
+            }
+            //return the defending entity for destruction
+            deadEntities[0] = defendingEntity;
+            deadEntities[1] = Entity.Null;
+        }
+
+        //if attacking rank is lower than defending rank or the attacker is a spy and the defender is a private, defending side wins
+        else if (IsDefenderWinner(attackingRank, defendingRank))
+        {
+            //if attacking rank is flag, defending side loses
+            if (attackingRank == 14)
+            {
+                winningColor = defendingColor;
+            }
+            //return attacking entity for destruction
+            deadEntities[0] = attackingEntity;
+            deadEntities[1] = Entity.Null;
+        }
+
+        //if attacking rank is equal than defending rank, both pieces lose
+        else if (IsRankTied(attackingRank, defendingRank))
+        {
+            deadEntities[0] = defendingEntity;
+            deadEntities[1] = attackingEntity;
+            entityCommandBuffer.RemoveComponent<PieceOnCellComponent>(cellBattleGround);
+        }
+        //trigger winning event when winner has been decided
+        DeclareWinner(entityCommandBuffer, eventEntityArchetype, winningColor);
+        return deadEntities;
+    }
+
+    private static bool IsAttackerWInner(int attackingRank, int defendingRank)
+    {
+        return (attackingRank == 14 && defendingRank == 14) ||
+               (attackingRank == 13 && defendingRank == 0) ||
+               ((attackingRank < defendingRank) && !(attackingRank == 0 && defendingRank == 13));
+    }
+
+    private static bool IsDefenderWinner(int attackingRank, int defendingRank)
+    {
+        return (attackingRank > defendingRank) ||
+            (attackingRank == 0 && defendingRank == 13);
+    }
+
+    private static bool IsRankTied(int attackingRank, int defendingRank)
+    {
+        return !(attackingRank == 14 && defendingRank == 14) && attackingRank == defendingRank;
     }
 }

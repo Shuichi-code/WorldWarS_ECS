@@ -82,8 +82,6 @@ public class PiecePutDownSystem : SystemBase
                                         ecb.SetComponent(arbiter, new ArbiterComponent {
                                             attackingPieceEntity = pieceEntity,
                                             defendingPieceEntity = pieceOnCellComponentDataArray[cellNeighborEntity].pieceEntity,
-                                            attackingPiecerank = piece.pieceRank,
-                                            defendingPieceRank = cellNeighborPieceRank,
                                             cellBattleGround = cellNeighborEntity
                                         });
                                     }
@@ -116,6 +114,7 @@ public class PiecePutDownSystem : SystemBase
                                     }
 
                                     //Change the teamcolor to the other team
+                                    //Debug.Log("Changing team turn!");
                                     teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove == Color.white ? Color.black : Color.white;
                                     break;
                                 }
@@ -133,11 +132,10 @@ public class PiecePutDownSystem : SystemBase
                     ecb.SetComponent<GameManagerComponent>(gameManagerEntity, new GameManagerComponent
                     {
                         isDragging = false,
-                        state = GameManagerComponent.State.Playing,
+                        state = State.Playing,
                         teamToMove = teamColorToMove
                     });
                     ecb.RemoveComponent<SelectedTag>(pieceEntity);
-                    //Debug.Log(gameManagerArray[gameManagerEntity].state);
                 }
         }).Run();
         pieceOnCellArray.Dispose();
