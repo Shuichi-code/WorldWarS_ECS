@@ -42,7 +42,9 @@ public class PiecePickupSystem : SystemBase
                 if (Input.GetMouseButtonDown(0))
                 {
                     Color teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove;
-                    if (IsDragPieceValid(pieceTranslation, pieceComponent, gameManagerEntity, ref gameManagerArray, worldPos, teamColorToMove))
+                    if (PiecePutDownSystem.IsFloatSameTranslation(worldPos, pieceTranslation) &&
+                            teamColorToMove == pieceComponent.teamColor &&
+                            !gameManagerArray[gameManagerEntity].isDragging)
                     {
                         if (!HasComponent<SelectedTag>(pieceEntity))
                         {
@@ -60,33 +62,5 @@ public class PiecePickupSystem : SystemBase
                     }
                 }
             }).Run();
-    }
-
-    /// <summary>
-    /// Returns true if the piece clicked by player is nearest the mouse pointer, it is his team to move, and the the player did not click on the last frame
-    /// </summary>
-    /// <param name="pieceTranslation"></param>
-    /// <param name="pieceComponent"></param>
-    /// <param name="gameManagerEntity"></param>
-    /// <param name="gameManagerArray"></param>
-    /// <param name="worldPos"></param>
-    /// <param name="teamColorToMove"></param>
-    /// <returns></returns>
-    private static bool IsDragPieceValid(Translation pieceTranslation, PieceComponent pieceComponent, Entity gameManagerEntity, ref ComponentDataFromEntity<GameManagerComponent> gameManagerArray, float3 worldPos, Color teamColorToMove)
-    {
-        return MousePointerHasFoundPiece(pieceTranslation, worldPos) &&
-                            teamColorToMove == pieceComponent.teamColor &&
-                            !gameManagerArray[gameManagerEntity].isDragging;
-    }
-
-    /// <summary>
-    /// Returns true if the mouse position is nearest the piece position
-    /// </summary>
-    /// <param name="pieceTranslation"></param>
-    /// <param name="worldPos"></param>
-    /// <returns></returns>
-    private static bool MousePointerHasFoundPiece(Translation pieceTranslation, float3 worldPos)
-    {
-        return (pieceTranslation.Value.x == Math.Round(worldPos.x) && pieceTranslation.Value.y == Math.Round(worldPos.y)) ? true : false;
     }
 }

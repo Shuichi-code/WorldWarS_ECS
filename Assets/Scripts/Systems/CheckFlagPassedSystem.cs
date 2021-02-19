@@ -23,14 +23,15 @@ public class CheckFlagPassedSystem : SystemBase
         Entities.
             ForEach((Entity cellEntity, in PieceOnCellComponent pieceOnCellComponent) =>
             {
+                int pieceRank = GetComponent<PieceComponent>(pieceOnCellComponent.pieceEntity).pieceRank;
                 Color pieceOnCellColor = GetComponent<PieceComponent>(pieceOnCellComponent.pieceEntity).teamColor;
-                if ((HasComponent<LastCellsForBlackTag>(cellEntity) && pieceOnCellColor == Color.black) ||
-                    (HasComponent<LastCellsForWhiteTag>(cellEntity) && pieceOnCellColor == Color.white))
+                if ((HasComponent<LastCellsForBlackTag>(cellEntity) && pieceOnCellColor == Color.black && pieceRank == 14) ||
+                    (HasComponent<LastCellsForWhiteTag>(cellEntity) && pieceOnCellColor == Color.white && pieceRank == 14))
                 {
                     //player wins
                     Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
                     entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = pieceOnCellColor });
                 }
-            }).Schedule();
+            }).Run();
     }
 }

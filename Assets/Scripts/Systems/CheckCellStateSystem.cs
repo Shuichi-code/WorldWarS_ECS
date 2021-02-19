@@ -40,12 +40,12 @@ public class CheckCellStateSystem : SystemBase
         var ecb = entityCommandBuffer.CreateCommandBuffer();
         #endregion
         Entities.
-            ForEach((in SelectedTag selected, in PieceComponent dragPiece)=> {
+            ForEach((in SelectedTag selected, in PieceComponent dragPiece, in Translation dragPieceTranslation)=> {
                 int cellIndex = 0;
                 while (cellIndex < cellArrayPositions.Length)
                 {
                     //Get the cell where the piece is currently staying
-                    if (IsCellMatchWithPiece(dragPiece, ref cellArrayPositions, cellIndex))
+                    if (PiecePutDownSystem.IsFloatSameTranslation(dragPiece.originalCellPosition, cellArrayPositions[cellIndex]))
                     {
                         //Get the neighbors
                         DynamicBuffer<CellNeighborBufferElement> cellNeighborBuffer = cellNeighborBufferEntity[cellArray[cellIndex]];
@@ -54,10 +54,9 @@ public class CheckCellStateSystem : SystemBase
                         while (cellNeighborIndex < cellNeighborBuffer.Length)
                         {
                             Entity cellNeighborEntity = cellNeighborBuffer[cellNeighborIndex].cellNeighbor;
-                            //Debug.Log("Checking the neighbors");
+
                             if (!HasComponent<PieceOnCellComponent>(cellNeighborEntity))
                             {
-                                //Debug.Log("Highlighting the neighbor cells!");
                                 //highlight the cells
                                 ecb.AddComponent<HighlightedTag>(cellNeighborEntity);
                             }
@@ -79,13 +78,6 @@ public class CheckCellStateSystem : SystemBase
 
         cellArray.Dispose();
         cellArrayPositions.Dispose();
-
-    }
-
-    private static bool IsCellMatchWithPiece(PieceComponent dragPiece, ref NativeArray<Translation> cellArrayPositions, int cellIndex)
-    {
-        return dragPiece.originalCellPosition.x == cellArrayPositions[cellIndex].Value.x &&
-                            dragPiece.originalCellPosition.y == cellArrayPositions[cellIndex].Value.y;
     }
 }
 
