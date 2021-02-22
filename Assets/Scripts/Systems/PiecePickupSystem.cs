@@ -41,8 +41,11 @@ public class PiecePickupSystem : SystemBase
             {
                 if (Input.GetMouseButtonDown(0))
                 {
+                    float roundedWorldPositionX = (float)Math.Round(worldPos.x);
+                    float roundedWorldPositiony = (float)Math.Round(worldPos.y);
                     Color teamColorToMove = gameManagerArray[gameManagerEntity].teamToMove;
-                    if (PiecePutDownSystem.IsFloatSameTranslation(worldPos, pieceTranslation) &&
+                    if(roundedWorldPositionX == pieceTranslation.Value.x && roundedWorldPositiony == pieceTranslation.Value.y &&
+                    //if (PiecePutDownSystem.IsFloatSameTranslation(worldPos, pieceTranslation) &&
                             teamColorToMove == pieceComponent.teamColor &&
                             !gameManagerArray[gameManagerEntity].isDragging)
                     {

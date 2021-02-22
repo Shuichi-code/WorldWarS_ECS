@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using System;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -9,6 +10,7 @@ public class BoardManager : MonoBehaviour
     public Material cellImage;
     public Material enemyCellImage;
     public Material highlightedImage;
+    public GameObject piecePlaceCanvas;
 
     public System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
     {
@@ -49,11 +51,51 @@ public class BoardManager : MonoBehaviour
     private EntityManager entityManager;
 
     //default arrangement of pieces in the board. numbers represent the piecerank
-    private int[] mPieceOrder = new int[21]
+    private int[] defaultPieceArrangementArray = new int[21]
     {
-        1, 2, 3, 4, 5, 6, 7,
-        8, 9, 10, 11, 12, 13,13,
-        13,13,13,13, 0, 0, 14
+        1, 2, 3, 4, 5, 6, 7, 8, 9,
+        10, 11, 12, 13,13,13,13,13,13,
+        0, 0, 14
+    };
+
+    //Blitzkrieg-left arrangement
+    private int[] blitzkriegLeftPieceArrangementArray = new int[21]
+    {
+        1, 2, 0, 13, 13, 10, 7, 8, 9,
+        3, 4, 5, 13,13,13,13,11,12,
+        14, 0, 6
+    };
+
+    //Blitzkrieg- right arrangement
+    private int[] blitzkriegRightPieceArrangementArray = new int[21]
+    {
+        9, 8, 7, 13, 13, 10, 0, 2, 1,
+        12, 11, 13, 13,13,13,5,4,3,
+        6, 0, 14
+    };
+
+    //Mothership arrangement
+    private int[] mothershipPieceArrangementArray = new int[21]
+    {
+        9,  8,   13, 0, 3, 0, 13, 5, 6,
+        12, 11, 13, 1, 14, 2, 13, 4, 7,
+        10, 13, 13
+    };
+
+    //Box arrangement
+    private int[] boxPieceArrangementArray = new int[21]
+    {
+            1, 2, 0, 0, 3, 4, 5, 6, 7, 
+            8, 9, 10, 11, 12, 13,13,13,13,
+            13, 13, 14
+    };
+
+    //TODO: Random place arrangement
+    private int[] randomArrangementArray = new int[]    
+    {
+        1, 2, 3, 4, 5, 6, 7, 8, 9,
+        10, 11, 12, 13,13,13,13,13,13,
+        0, 0, 14
     };
 
     private NativeArray<Entity> pieceArray;
@@ -92,23 +134,41 @@ public class BoardManager : MonoBehaviour
             typeof(PieceTag)
         );
 
-        pieceArray = new NativeArray<Entity>(mPieceOrder.Length, Allocator.Temp);
+        pieceArray = new NativeArray<Entity>(defaultPieceArrangementArray.Length, Allocator.Temp);
         entityManager.CreateEntity(entityArchetype, pieceArray);
-        Placepieces(color);
+        //TODO: Create method of placing the entities in a UI that the player can drag and drop on the board.
+        if (color == Color.white)
+        {
+            PlayerPlacePieces(color);
+        }
+        else
+        {
+            Placepieces(color);
+        }
+        //PlayerPlacePieces(color);
+        //Placepieces(color);
+    }
+
+    private void PlayerPlacePieces(Color color)
+    {
+        //Turns on the UI where the piece entities shall be put.
+        //Change the games state to Waiting to Start
+        //Have all the piece entities be rendered on that UI
+        //throw new NotImplementedException();
     }
 
     /// <summary>
-    /// Places pieces on the board
+    /// Places pieces on the board on default places. This is only for testing purposes.
     /// </summary>
     /// <param name="teamColor"></param>
     public void Placepieces(Color teamColor)
     {
         int[] ycoordinateArray = SetColumnPlaces(teamColor);
         int pieceIndex = 0;
-        while (pieceIndex < mPieceOrder.Length)
+        while (pieceIndex < defaultPieceArrangementArray.Length)
         {
-            int xcoordinate = (pieceIndex < 9) ? (pieceIndex - 4) : (pieceIndex >= 9 && pieceIndex < 18) ? (pieceIndex - 9 - 4) : (pieceIndex - 18- 4);
-            int ycoordinate = (pieceIndex < 9) ? (ycoordinateArray[0]-4) : (pieceIndex >= 9 && pieceIndex < 18) ? (ycoordinateArray[1]-4) : ycoordinateArray[2] - 4;
+            int xcoordinate = (pieceIndex < 9) ? (pieceIndex - 4) : (pieceIndex >= 9 && pieceIndex < 18) ? (pieceIndex - 9 - 4) : (pieceIndex - 18 - 4);
+            int ycoordinate = (pieceIndex < 9) ? (ycoordinateArray[0] - 4) : (pieceIndex >= 9 && pieceIndex < 18) ? (ycoordinateArray[1] - 4) : ycoordinateArray[2] - 4;
             float3 piecePosition = new float3(xcoordinate, ycoordinate, 50);
 
             //Place the pieces on the board
@@ -117,7 +177,7 @@ public class BoardManager : MonoBehaviour
                  new PieceComponent
                  {
                      originalCellPosition = piecePosition,
-                     pieceRank = mPieceOrder[pieceIndex],
+                     pieceRank = defaultPieceArrangementArray[pieceIndex],
                      teamColor = teamColor
                  }
              );

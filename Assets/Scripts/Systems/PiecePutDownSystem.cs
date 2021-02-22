@@ -40,7 +40,6 @@ public class PiecePutDownSystem : SystemBase
         #endregion
         //TODO: Find a way to make this burst-safe. Cannot make this burst because burst does not support Math class in GetXandYCoordinate method
         Entities.
-            WithoutBurst().
             WithAll<SelectedTag>().
             ForEach((Entity droppedPieceEntity, ref Translation droppedPieceTranslation, ref PieceComponent droppedPieceComponent)=> {
                 if (Input.GetMouseButtonUp(0))
@@ -57,7 +56,8 @@ public class PiecePutDownSystem : SystemBase
                         //get the neighbor buffer of the original cell that the dragged piece was on
                         Entity currentCellEntity = cellEntityArray[cellIndex];
                         //Debug.Log("Iterating on all cells!");
-                        if(IsFloatSameTranslation(droppedPieceComponent.originalCellPosition, cellTranslationDataArray[currentCellEntity]))
+                        if(droppedPieceComponent.originalCellPosition.x == cellTranslationDataArray[currentCellEntity].Value.x && droppedPieceComponent.originalCellPosition.y == cellTranslationDataArray[currentCellEntity].Value.y)
+                        //if(IsFloatSameTranslation(droppedPieceComponent.originalCellPosition, cellTranslationDataArray[currentCellEntity]))
                         {
                             //iterate on all neighbor cell of the original cell
                             DynamicBuffer<CellNeighborBufferElement> cellNeighborBuffer = cellNeighborBufferEntity[currentCellEntity];
@@ -67,7 +67,8 @@ public class PiecePutDownSystem : SystemBase
                                 Entity cellNeighborEntity = cellNeighborBuffer[cellNeighborIndex].cellNeighbor;
                                 Translation cellNeighborTranslation = cellTranslationDataArray[cellNeighborEntity];
 
-                                if (IsFloatSameTranslation(roundedDroppedPieceCoordinate, cellNeighborTranslation) &&
+                                if(roundedDroppedPieceCoordinate.x == cellNeighborTranslation.Value.x && roundedDroppedPieceCoordinate.y == cellNeighborTranslation.Value.y &&
+                                //if (IsFloatSameTranslation(roundedDroppedPieceCoordinate, cellNeighborTranslation) 
                                 (!HasComponent<PieceOnCellComponent>(cellNeighborEntity) || HasComponent<EnemyCellTag>(cellNeighborEntity)))
                                 {
                                     //or if piece lands on an enemy cell then the move is valid and combat occurs
@@ -84,7 +85,7 @@ public class PiecePutDownSystem : SystemBase
                                             cellBattleGround = cellNeighborEntity
                                         });
                                     }
-                                    Debug.Log("Found valid move!");
+                                    //Debug.Log("Found valid move!");
                                     foundMove = true;
                                     droppedPieceTranslation.Value = roundedDroppedPieceCoordinate;
                                     droppedPieceComponent.originalCellPosition = roundedDroppedPieceCoordinate;
@@ -106,7 +107,7 @@ public class PiecePutDownSystem : SystemBase
                                 //if the piece lands in an invalid cell, return to original cell
                                 if (!foundMove)
                                 {
-                                    Debug.Log("Could not find valid move");
+                                    //Debug.Log("Could not find valid move");
                                     droppedPieceTranslation.Value = droppedPieceComponent.originalCellPosition;
                                 }
                             }

@@ -93,7 +93,7 @@ public class ArbiterCheckingSystem : SystemBase
             WithoutBurst().
             ForEach((in GameFinishedEventComponent eventComponent) =>
             {
-                Debug.Log("Triggering win event!");
+                //Debug.Log("Triggering win event!");
                 OnGameWin?.Invoke(eventComponent.winningTeamColor);
             }).Run();
         EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
@@ -109,7 +109,7 @@ public class ArbiterCheckingSystem : SystemBase
     {
         if (winningColor != Color.clear)
         {
-            Debug.Log("Flag has fallen!");
+            //Debug.Log("Flag has fallen!");
             Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
             entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeamColor = winningColor });
         }

@@ -45,7 +45,8 @@ public class CheckCellStateSystem : SystemBase
                 while (cellIndex < cellArrayPositions.Length)
                 {
                     //Get the cell where the piece is currently staying
-                    if (PiecePutDownSystem.IsFloatSameTranslation(dragPiece.originalCellPosition, cellArrayPositions[cellIndex]))
+                    if(dragPiece.originalCellPosition.x == cellArrayPositions[cellIndex].Value.x && dragPiece.originalCellPosition.y == cellArrayPositions[cellIndex].Value.y)
+                    //if (PiecePutDownSystem.IsFloatSameTranslation(dragPiece.originalCellPosition, cellArrayPositions[cellIndex]))
                     {
                         //Get the neighbors
                         DynamicBuffer<CellNeighborBufferElement> cellNeighborBuffer = cellNeighborBufferEntity[cellArray[cellIndex]];
