@@ -4,15 +4,8 @@ using UnityEngine;
 
 public class FormationButtonScript : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    public void OnPress()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        Debug.Log("Button has been pressed.");
     }
 }
