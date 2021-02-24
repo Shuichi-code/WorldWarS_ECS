@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement style="flex-direction: row; align-items: auto; justify-content: space-between; height: 30%;">
+        <ui:Button text="Button" name="ReturnButton" />
+        <ui:Button text="Button" name="DeployButton" />
+    </ui:VisualElement>
+</ui:UXML>
