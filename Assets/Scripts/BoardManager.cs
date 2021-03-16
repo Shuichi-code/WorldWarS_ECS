@@ -194,7 +194,7 @@ public class BoardManager : MonoBehaviour
 
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         entityGameManagerArchetype = entityManager.CreateArchetype(typeof(GameManagerComponent));
-        Entity gameManager = entityManager.CreateEntity(entityGameManagerArchetype);
+        Entity gameManager = NewMethod();
         entityManager.SetComponentData(gameManager,
             new GameManagerComponent
             {
@@ -206,6 +206,11 @@ public class BoardManager : MonoBehaviour
         CreateBoard();
         CreatePieces(Color.white);
         CreatePieces(Color.black);
+    }
+
+    private Entity NewMethod()
+    {
+        return entityManager.CreateEntity(entityGameManagerArchetype);
     }
 
     /// <summary>
