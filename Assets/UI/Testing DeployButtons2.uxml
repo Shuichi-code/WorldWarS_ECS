@@ -1,3 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-    <ui:Button text="Button" name="DeployButton" />
+    <ui:VisualElement name="Header" style="height: 10%; border-left-color: rgb(47, 47, 47); border-right-color: rgb(47, 47, 47); border-top-color: rgb(47, 47, 47); border-bottom-color: rgb(47, 47, 47); border-left-width: 5px; border-right-width: 5px; border-top-width: 5px; border-bottom-width: 5px; background-color: rgb(128, 128, 128);">
+        <ui:Label text="Choose your Opening:" style="font-size: 24px; height: auto; flex-grow: 1; -unity-text-align: upper-center;" />
+    </ui:VisualElement>
+    <ui:VisualElement name="Body" style="height: 80%; flex-direction: row; border-left-width: 5px; border-right-width: 5px; border-top-width: 5px; border-bottom-width: 5px; border-left-color: rgb(47, 47, 47); border-right-color: rgb(47, 47, 47); border-top-color: rgb(47, 47, 47); border-bottom-color: rgb(47, 47, 47);">
+        <ui:VisualElement name="VisualElement" style="width: 70%; height: 100%; border-left-color: rgb(47, 47, 47); border-right-color: rgb(47, 47, 47); border-top-color: rgb(47, 47, 47); border-bottom-color: rgb(47, 47, 47); border-left-width: 0; border-right-width: 5px; border-top-width: 0; border-bottom-width: 0;" />
+        <ui:VisualElement style="width: 30%; height: 100%; border-left-width: 5px; border-left-color: rgb(47, 47, 47); border-right-color: rgb(47, 47, 47); border-top-color: rgb(47, 47, 47); border-bottom-color: rgb(47, 47, 47);">
+            <uie:EnumField label="Enum" value="Center" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement name="Footer" style="height: 10%; flex-direction: row; align-items: auto; border-top-width: 5px; border-left-width: 5px; border-right-width: 5px; border-bottom-width: 5px; border-left-color: rgb(47, 47, 47); border-right-color: rgb(47, 47, 47); border-top-color: rgb(47, 47, 47); border-bottom-color: rgb(47, 47, 47); justify-content: space-around;">
+        <ui:Button text="Accept" name="AcceptBtn" style="font-size: 20px; background-color: rgb(46, 204, 113); width: 50%;" />
+        <ui:Button text="Return" name="ReturnBtn" style="background-color: rgb(192, 57, 43); font-size: 20px; color: rgb(236, 240, 241); width: 50%;" />
+    </ui:VisualElement>
 </ui:UXML>

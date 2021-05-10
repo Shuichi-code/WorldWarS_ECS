@@ -14,15 +14,11 @@ public class UIBuilder : MonoBehaviour
     {
         Debug.Log("Entering OnLoadUXML");
         var root = panelRenderer.visualTree;
-        if (root != null)
-        {
-            Debug.Log("Root exists!");
-        }
+
         //Find & Subscribe Method onclick event On "Tap to Start" (Name in UXML is "Play" ) Button of Mainmenu Screen
         var tapToStart = root.Q<Button>("DeployButton"); // find Play button in Uxml(visualTree)
         if (tapToStart != null)
         {
-            Debug.Log("DeployButton found!");
             tapToStart.clicked += OnPlay; // subscribe event
         }
 
@@ -51,14 +47,5 @@ public class UIBuilder : MonoBehaviour
     private void OnEnable()
     {
         panelRenderer.postUxmlReload += OnloadUXML; //!!! THIS CODE NEEDS TO BE RUN ON OnEnable METHOD
-        //var deployButton = panelRenderer.visualTree.Q<Button>("DeployButton");
-        //deployButton.clickable.clickedWithEventInfo += (evt) => Debug.Log("Button has been pressed");
-        //deployButton.clickable.clicked += () => Debug.Log("Clicked!");
-        //deployButton.RegisterCallback<MouseUpEvent>(ev => ButtonPressed());
-    }
-
-    private void ButtonPressed()
-    {
-        Debug.Log("Deploy Button has been pressed!");
     }
 }
