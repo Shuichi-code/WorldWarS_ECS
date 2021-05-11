@@ -6,41 +6,68 @@ using Button = UnityEngine.UIElements.Button;
 
 public class UIBuilder : MonoBehaviour
 {
+    public enum OpeningType
+    {
+        Default,
+        BlitzkriegLeft,
+        BlitzkriegRight,
+        Mothership,
+        Box,
+        Random
+    }
     [SerializeField] private PanelRenderer panelRenderer;
-    private VisualElement rootElement;
+    //[SerializeField] private Canvas parentCanvas;
+
+    public CanvasGroup cg;
+
 
     //call OnLoad of UXML in panelRenedere
     private IEnumerable<Object> OnloadUXML()
     {
-        Debug.Log("Entering OnLoadUXML");
         var root = panelRenderer.visualTree;
+        Label openingLabel = root.Q<Label>("Opening_Label");
 
         //Find & Subscribe Method onclick event On "Tap to Start" (Name in UXML is "Play" ) Button of Mainmenu Screen
-        var tapToStart = root.Q<Button>("DeployButton"); // find Play button in Uxml(visualTree)
+        var tapToStart = root.Q<Button>("AcceptBtn"); // find Play button in Uxml(visualTree)
         if (tapToStart != null)
         {
             tapToStart.clicked += OnPlay; // subscribe event
         }
 
         //Find & Subscribe Method onclick event On "Exit" (Name in UXML is "Exit" ) Button of Mainmenu Screen
-        var exit = root.Q<Button>("ReturnButton");// find Exit button in Uxml(visualTree)
+        var exit = root.Q<Button>("ReturnBtn");// find Exit button in Uxml(visualTree)
         if (exit != null)
         {
             exit.clicked += OnExit; // subscribe event
         }
 
+        root.Query<Button>(className: "opening-choices").ForEach(ChooseOpening(openingLabel));
         return null;
+    }
+
+    private static System.Action<Button> ChooseOpening(Label openingLabel)
+    {
+        return (btn) =>
+        {
+            btn.clicked += () =>
+            {
+                openingLabel.text = "Your Opening is: " + btn.text;
+            };
+        };
     }
 
     // Call OnTap of Play button of MainmenuScreen
     private void OnPlay()
     {
-        Debug.Log("Clicked on DeployButton");
+        //Load the game with chosen opening.
+        
+        Debug.Log("Clicked on AcceptButton");
     }
 
     // Call OnTap of Exit button of MainmenuScreen
     private void OnExit()
     {
+        //Go back to main menu
         Debug.Log("Clicked on ReturnButton");
     }
 

@@ -1,0 +1,10 @@
+.opening-toggle {
+}
+
+.opening-toggle {
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.opening_choices {
+}
