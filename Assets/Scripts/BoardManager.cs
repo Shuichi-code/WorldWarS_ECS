@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class BoardManager : MonoBehaviour
 {
@@ -35,6 +36,7 @@ public class BoardManager : MonoBehaviour
     private const int maxColumnCells = 8;
     private const int maxRowCells = 9;
     private static BoardManager instance;
+    public static string openingMode;
 
     private NativeArray<Entity> boardArray;
 
@@ -137,6 +139,7 @@ public class BoardManager : MonoBehaviour
         pieceArray = new NativeArray<Entity>(defaultPieceArrangementArray.Length, Allocator.Temp);
         entityManager.CreateEntity(entityArchetype, pieceArray);
         //TODO: Create method of placing the entities in a UI that the player can drag and drop on the board.
+        /*
         if (color == Color.white)
         {
             PlayerPlacePieces(color);
@@ -145,8 +148,9 @@ public class BoardManager : MonoBehaviour
         {
             Placepieces(color);
         }
+        */
         //PlayerPlacePieces(color);
-        //Placepieces(color);
+        Placepieces(color);
     }
 
     private void PlayerPlacePieces(Color color)

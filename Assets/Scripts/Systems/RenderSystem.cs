@@ -65,7 +65,7 @@ public class RenderSystem : SystemBase
                );
             }).Run();
 
-        //code for rendering highlighted cells
+        //code for rendering pieces
         Entities.
             WithoutBurst().
             ForEach((in PieceComponent pieceComponent, in Translation translation) => {

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Unity.UIElements.Runtime;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 
@@ -19,6 +20,7 @@ public class UIBuilder : MonoBehaviour
     //[SerializeField] private Canvas parentCanvas;
 
     public CanvasGroup cg;
+    public static string openingMode;
 
 
     //call OnLoad of UXML in panelRenedere
@@ -52,6 +54,7 @@ public class UIBuilder : MonoBehaviour
             btn.clicked += () =>
             {
                 openingLabel.text = "Your Opening is: " + btn.text;
+                BoardManager.openingMode = btn.text;
             };
         };
     }
@@ -60,7 +63,7 @@ public class UIBuilder : MonoBehaviour
     private void OnPlay()
     {
         //Load the game with chosen opening.
-        
+        SceneManager.LoadScene(1);
         Debug.Log("Clicked on AcceptButton");
     }
 
