@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:Template name="Title" src="Title.uxml" />
+    <TitleUI>
+        <ui:Instance template="Title" name="Title" />
+    </TitleUI>
+</ui:UXML>

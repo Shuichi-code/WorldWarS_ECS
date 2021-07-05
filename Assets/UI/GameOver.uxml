@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement style="height: 100%; width: 100%; -unity-text-align: upper-left; align-items: stretch; background-color: rgb(87, 87, 87);">
+        <ui:VisualElement style="height: 40%; -unity-text-align: upper-left;">
+            <ui:Label text="Game Over!" display-tooltip-when-elided="true" style="font-size: 40px; -unity-text-align: middle-center; height: 100%; -unity-font-definition: resource(&apos;Fonts &amp; Materials/LiberationSans SDF&apos;);" />
+        </ui:VisualElement>
+        <ui:VisualElement style="height: 30%; flex-direction: row;">
+            <ui:Label text="The Winner is: " display-tooltip-when-elided="true" style="width: 50%; height: 100%; -unity-text-align: middle-right; font-size: 20px; -unity-font-definition: resource(&apos;Fonts &amp; Materials/LiberationSans SDF&apos;);" />
+            <ui:Label text="Label" display-tooltip-when-elided="true" name="winnerLbl" style="font-size: 30px; -unity-text-align: middle-left; width: 50%; -unity-font-definition: resource(&apos;Fonts &amp; Materials/LiberationSans SDF&apos;);" />
+        </ui:VisualElement>
+        <ui:VisualElement style="height: 30%; flex-direction: row; -unity-text-align: upper-left; align-items: center; justify-content: center;">
+            <ui:Button text="Try Again" display-tooltip-when-elided="true" name="tryAgainBtn" style="width: 30%; height: 30%; background-color: rgb(39, 174, 96); color: rgb(44, 62, 80); -unity-font-definition: resource(&apos;Fonts &amp; Materials/LiberationSans SDF&apos;);" />
+            <ui:Button text="Exit Game" display-tooltip-when-elided="true" name="exitBtn" style="width: 30%; height: 30%; background-color: rgb(192, 57, 43); -unity-font-definition: resource(&apos;Fonts &amp; Materials/LiberationSans SDF&apos;);" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

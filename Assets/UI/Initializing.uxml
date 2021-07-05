@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement style="height: 100%; width: 100%; background-color: rgb(142, 68, 173);">
+        <ui:VisualElement style="height: 20%;">
+            <ui:Label text="Choose your opening:&#10;" display-tooltip-when-elided="true" style="font-size: 60%; -unity-text-align: upper-center;" />
+        </ui:VisualElement>
+        <ui:VisualElement style="height: 60%; align-items: stretch; justify-content: space-around; flex-direction: row;">
+            <ui:VisualElement style="width: 60%; height: 100%;" />
+            <ui:VisualElement name="openingVisualElement" style="width: 40%; height: 100%;" />
+        </ui:VisualElement>
+        <ui:VisualElement style="flex-direction: row; justify-content: space-around; height: 20%; width: 100%; align-items: stretch;">
+            <ui:Button text="Accept" display-tooltip-when-elided="true" name="acceptBtn" style="width: 10%; background-color: rgb(46, 204, 113); color: rgb(0, 0, 0); font-size: 20%;" />
+            <ui:Button text="Return" display-tooltip-when-elided="true" name="returnBtn" style="-unity-text-align: middle-center; width: 10%; background-color: rgb(192, 57, 43); font-size: 20%;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
