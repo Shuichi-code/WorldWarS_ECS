@@ -29,9 +29,6 @@ namespace Assets.Scripts.Monobehaviours
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         }
 
-        /// <summary>
-        /// Creates the piece entities
-        /// </summary>
         public void CreatePieces(Team team)
         {
             entityArchetype = entityManager.CreateArchetype(
@@ -41,7 +38,6 @@ namespace Assets.Scripts.Monobehaviours
 
             pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
             entityManager.CreateEntity(entityArchetype, pieceArray);
-            //TODO: Create method of placing the entities in a UI that the player can drag and drop on the board.
 
             if (team == Team.Invader)
             {
@@ -132,9 +128,9 @@ namespace Assets.Scripts.Monobehaviours
         {
             int startingXCoordinate = -4;
             int startingYCoordinate = -4;
-            int xcoordinate = (pieceIndex < 9) ? (pieceIndex + startingXCoordinate) : (pieceIndex < 18) ? (pieceIndex - 9 + startingXCoordinate) : (pieceIndex - 18 + startingXCoordinate);
-            int ycoordinate = (pieceIndex < 9) ? (yCoordinateArray[0] + startingYCoordinate) : (pieceIndex < 18) ? (yCoordinateArray[1] + startingYCoordinate) : yCoordinateArray[2] + startingYCoordinate;
-            return new float3(xcoordinate, ycoordinate, PieceZ);
+            int xCoordinate = (pieceIndex < 9) ? (pieceIndex + startingXCoordinate) : (pieceIndex < 18) ? (pieceIndex - 9 + startingXCoordinate) : (pieceIndex - 18 + startingXCoordinate);
+            int yCoordinate = (pieceIndex < 9) ? (yCoordinateArray[0] + startingYCoordinate) : (pieceIndex < 18) ? (yCoordinateArray[1] + startingYCoordinate) : yCoordinateArray[2] + startingYCoordinate;
+            return new float3(xCoordinate, yCoordinate, PieceZ);
         }
     }
 }
