@@ -36,7 +36,7 @@ namespace Assets.Scripts.Monobehaviours
             SetSystemsEnabled(false);
 
             //activate the canvas and print the winner
-            winnerLabel.text = winnerLabel != null ? "The winning team is: " + (winningTeam == Team.Invader ? "Invader" : "Defender") : "WinnerLabel is null.";
+            winnerLabel.text = winnerLabel != null ? (winningTeam == Team.Invader ? "Invader" : "Defender") : "WinnerLabel is null.";
         }
 
 

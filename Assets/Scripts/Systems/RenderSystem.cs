@@ -1,4 +1,5 @@
-﻿using Assets.Scripts.Components;
+﻿using Assets.Scripts.Class;
+using Assets.Scripts.Components;
 using Assets.Scripts.Monobehaviours;
 using Assets.Scripts.Tags;
 using Unity.Entities;
@@ -24,7 +25,7 @@ namespace Assets.Scripts.Systems
                 WithoutBurst().
                 ForEach((in PieceComponent pieceComponent, in Translation translation) =>
                 {
-                    var pieceMaterial = Resources.Load(GameManager.GetInstance().mPieceRank[pieceComponent.pieceRank],
+                    var pieceMaterial = Resources.Load(new Dictionaries().mPieceRank[pieceComponent.pieceRank],
                         typeof(Material)) as Material;
                     Render(translation, pieceMaterial);
                 }).Run();

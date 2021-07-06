@@ -156,8 +156,6 @@ MonoBehaviour:
   enemyCellImage: {fileID: 2100000, guid: e7e2add9157e04347b7fed1a29bd5da2, type: 2}
   highlightedImage: {fileID: 2100000, guid: 6d1840f13deafe049a799df39230f543, type: 2}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
-  _boardManager: {fileID: 1556080066}
-  _pieceManager: {fileID: 1514544925}
 --- !u!4 &85616575
 Transform:
   m_ObjectHideFlags: 0
@@ -345,7 +343,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a0c099614575ba48b271ecfaa239649, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameManager: {fileID: 85616574}
 --- !u!4 &1514544926
 Transform:
   m_ObjectHideFlags: 0
@@ -450,7 +447,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3a2085e232fe449be8738cfdeff673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameManager: {fileID: 85616574}
 --- !u!4 &1556080067
 Transform:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-﻿namespace Assets.Scripts.Monobehaviours
+﻿namespace Assets.Scripts.Class
 {
     public class OpeningArrangement
     {

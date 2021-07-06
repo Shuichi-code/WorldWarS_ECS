@@ -44,5 +44,15 @@ namespace Assets.Scripts.Class
         {
             return math.distance(RemoveZ(selectedPieceLocation), RemoveZ(cellLocation)) == 0;
         }
+
+        public static float3 GetPieceCoordinate(int xIndex, int yIndex, float PieceZ)
+        {
+            var pieceStartingXCoordinate = -4f;
+            var pieceStartingYCoordinate = -2f;
+            var pieceXCoordinate = pieceStartingXCoordinate + xIndex;
+            var pieceYCoordinate = pieceStartingYCoordinate - yIndex;
+
+            return new float3(pieceXCoordinate, pieceYCoordinate, PieceZ);
+        }
     }
 }

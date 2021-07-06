@@ -84,5 +84,15 @@ namespace Assets.Editor.MTests
 
             Assert.That(result, Is.False);
         }
+
+        [Test]
+        [TestCase(0,0,0)]
+        [TestCase(0, 1, 0)]
+        public void GetPieceCoordinate_WhenInput_ReturnExpectedValue(int xIndex, int yIndex, int zIndex)
+        {
+            var result = Location.GetPieceCoordinate(xIndex, yIndex, zIndex);
+            var expectedResult = new float3(xIndex - 4, -2 - yIndex, zIndex);
+            Assert.That(result, Is.EqualTo(expectedResult));
+        }
     }
 }

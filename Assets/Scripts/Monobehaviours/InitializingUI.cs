@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Assets.Scripts.Class;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -16,6 +17,7 @@ namespace Assets.Scripts.Monobehaviours
         private string returnBtnName = "returnBtn";
 
         private ListView openingListView;
+        private GameManager _gameManager;
 
         void OnEnable()
         {
@@ -66,11 +68,15 @@ namespace Assets.Scripts.Monobehaviours
         private void InitializeGame()
         {
             string chosenOpening = openingListView.selectedItem.ToString();
-            Debug.Log("You have chosen the " + chosenOpening + " opening!");
             //hide the initializing UI
             initializingUI.SetActive(false);
-            //arrange the player's piece according to the chosen opening.
-            // have the enemy choose a random opening
+            _gameManager = GameManager.GetInstance();
+            _gameManager.SetGameState(GameState.PlacingPieces);
+            //pass the chosenopening to piecemanager to arrange the pieces.
+
+            _gameManager.Player.ChosenOpening = chosenOpening;
+            _gameManager.Player.Team = Team.Invader;
+            PieceManager.GetInstance().CreatePlayerPieces(_gameManager.Player);
         }
     }
 }

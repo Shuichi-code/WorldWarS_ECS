@@ -12,25 +12,6 @@ namespace Assets.Scripts.Monobehaviours
         public Material enemyCellImage;
         public Material highlightedImage;
 
-        public System.Collections.Generic.Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
-        {
-            { 0,"Spy"},
-            { 1,"G5S" },
-            { 2,"G4S" },
-            { 3,"LtG"},
-            { 4,"MjG"},
-            { 5,"BrG"},
-            { 6,"Col"},
-            { 7,"LtCol"},
-            { 8,"Maj" },
-            { 9,"Cpt"},
-            { 10,"1Lt"},
-            { 11,"2Lt"},
-            { 12,"Sgt"},
-            { 13,"Pvt"},
-            { 14,"Flg"},
-        };
-
         public Mesh quadMesh;
 
         private static GameManager _instance;
@@ -43,6 +24,9 @@ namespace Assets.Scripts.Monobehaviours
         private EntityArchetype entityArchetype;
         private EntityManager entityManager;
 
+
+        public Player Player { get; set; }
+
         public static GameManager GetInstance()
         {
             return _instance;
@@ -50,17 +34,18 @@ namespace Assets.Scripts.Monobehaviours
 
         private void Start()
         {
+            Player = new Player();
             _instance = this;
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             CreateGameManagerEntity();
             CreateGameWorld();
-            SetGameState(GameState.Playing);
+            SetGameState(GameState.WaitingToStart);
         }
 
         public void CreateGameWorld()
         {
             BoardManager.GetInstance().CreateBoard();
-            PieceManager.GetInstance().CreatePieces(Team.Invader);
+            //PieceManager.GetInstance().CreatePieces(Team.Invader);
             PieceManager.GetInstance().CreatePieces(Team.Defender);
         }
 

@@ -18,6 +18,8 @@ namespace Assets.Scripts.Monobehaviours
 
         public readonly OpeningArrangement openingArrangement = new OpeningArrangement();
         private static PieceManager _instance;
+        private float startingXCoordinate;
+        private float startingYCoordinate;
 
         public static PieceManager GetInstance()
         {
@@ -27,6 +29,7 @@ namespace Assets.Scripts.Monobehaviours
         {
             _instance = this;
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
         }
 
         public void CreatePieces(Team team)
@@ -59,8 +62,8 @@ namespace Assets.Scripts.Monobehaviours
                 int pieceRank = openingArrangement.defaultArrangementArray[xIndex, yIndex];
                 if (pieceRank != 15) //15 is null value;
                 {
-                    float startingXCoordinate = GameManager.GetInstance().startingXCoordinate;
-                    float startingYCoordinate = GameManager.GetInstance().startingYCoordinate;
+                    startingXCoordinate = GameManager.GetInstance().startingXCoordinate;
+                    startingYCoordinate = GameManager.GetInstance().startingYCoordinate;
                     //place cells on x-index
                     int xCoordinate = yIndex + (int) startingXCoordinate;
                     int yCoordinate = xIndex + (int) startingYCoordinate;
@@ -95,7 +98,8 @@ namespace Assets.Scripts.Monobehaviours
             int pieceIndex = 0;
             while (pieceIndex < 21)
             {
-                float3 piecePosition = SetPieceCoordinates(yCoordinateArray, pieceIndex);
+
+                float3 piecePosition = SetDefaultPieceCoordinates(yCoordinateArray, pieceIndex);
 
                 //Place the pieces on the board
                 entityManager.SetComponentData(pieceArray[pieceIndex], new Translation { Value = piecePosition });
@@ -124,13 +128,72 @@ namespace Assets.Scripts.Monobehaviours
             return columnsArray;
         }
 
-        public static float3 SetPieceCoordinates(int[] yCoordinateArray, int pieceIndex)
+        public static float3 SetDefaultPieceCoordinates(int[] yCoordinateArray, int pieceIndex)
         {
             int startingXCoordinate = -4;
             int startingYCoordinate = -4;
             int xCoordinate = (pieceIndex < 9) ? (pieceIndex + startingXCoordinate) : (pieceIndex < 18) ? (pieceIndex - 9 + startingXCoordinate) : (pieceIndex - 18 + startingXCoordinate);
             int yCoordinate = (pieceIndex < 9) ? (yCoordinateArray[0] + startingYCoordinate) : (pieceIndex < 18) ? (yCoordinateArray[1] + startingYCoordinate) : yCoordinateArray[2] + startingYCoordinate;
             return new float3(xCoordinate, yCoordinate, PieceZ);
+        }
+
+        public void CreatePlayerPieces(Player player)
+        {
+            CreatePlayerPieceEntities();
+
+            //get arrangement based on chosenOpening
+            int[,] chosenOpenArray = new Dictionaries().mOpenings[player.ChosenOpening];
+
+            //set the player pieces based on the arrangement
+            int xIndex = 0;
+            int yIndex = 0;
+            var i = 0;
+            while (xIndex < 9)
+            {
+                var pieceRank = chosenOpenArray[yIndex, xIndex];
+                if (pieceRank != Piece.Null)
+                {
+                    var pieceLocation = Location.GetPieceCoordinate(xIndex, yIndex, PieceZ);
+                    var pieceEntity = pieceArray[i];
+                    i++;
+
+                    SetPieceEntityLocation(pieceEntity, pieceLocation);
+
+                    entityManager.SetComponentData(pieceEntity,
+                        new PieceComponent
+                        {
+                            originalCellPosition = pieceLocation,
+                            pieceRank = pieceRank,
+                            team = player.Team
+                        }
+                    );
+                    //  BoardManager.GetInstance().SetPiecesOnCellsAsReference(xIndex + yIndex, pieceLocation, pieceArray);
+                }
+
+                xIndex++;
+                if (xIndex == 9 && yIndex < 2)
+                {
+                    yIndex++;
+                    xIndex = 0;
+                }
+            }
+        }
+
+        private void SetPieceEntityLocation(Entity pieceEntity,float3 pieceCoordinate)
+        {
+            entityManager.SetComponentData(pieceEntity, new Translation { Value = pieceCoordinate });
+
+        }
+
+        private void CreatePlayerPieceEntities()
+        {
+            entityArchetype = entityManager.CreateArchetype(
+                typeof(Translation),
+                typeof(PieceComponent)
+            );
+
+            pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
+            entityManager.CreateEntity(entityArchetype, pieceArray);
         }
     }
 }

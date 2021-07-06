@@ -17,5 +17,6 @@
         public const int Sergeant = 12;
         public const int Private = 13;
         public const int Flag = 14;
+        public const int Null = 15;
     }
 }
