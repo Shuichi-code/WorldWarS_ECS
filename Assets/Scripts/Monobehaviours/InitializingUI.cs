@@ -26,10 +26,7 @@ namespace Assets.Scripts.Monobehaviours
             rootVisualElement.Q(acceptBtnName)?.RegisterCallback<ClickEvent>(ev => InitializeGame());
             rootVisualElement.Q(returnBtnName)?.RegisterCallback<ClickEvent>(ev => ReturnToTitle());
             var openingListVisualElement = rootVisualElement.Q(openingListVE);
-
-            var openingList = new List<string>() { "Default", "Blitzkrieg-Left", "Blitzkrieg-Right", "Mothership", "Box" };
-
-            openingListView = InitializeList(openingList, openingListName);
+            openingListView = InitializeList(new Dictionaries().openingList, openingListName);
             openingListVisualElement.Add(openingListView);
         }
 
@@ -76,7 +73,7 @@ namespace Assets.Scripts.Monobehaviours
 
             _gameManager.Player.ChosenOpening = chosenOpening;
             _gameManager.Player.Team = Team.Invader;
-            PieceManager.GetInstance().CreatePlayerPieces(_gameManager.Player);
+            _gameManager.CreateGameWorld();
         }
     }
 }

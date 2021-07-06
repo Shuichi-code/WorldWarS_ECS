@@ -1,8 +1,11 @@
-﻿using Assets.Scripts.Class;
+﻿using System.Collections.Generic;
+using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+using Assets.Scripts.Systems;
 using Assets.Scripts.Tags;
 using Unity.Entities;
 using UnityEngine;
+using Random = System.Random;
 
 namespace Assets.Scripts.Monobehaviours
 {
@@ -22,10 +25,12 @@ namespace Assets.Scripts.Monobehaviours
         public static string openingMode;
 
         private EntityArchetype entityArchetype;
-        private EntityManager entityManager;
+        private EntityManager _entityManager;
 
 
         public Player Player { get; set; }
+        public Player EnemyAI { get; set; }
+
 
         public static GameManager GetInstance()
         {
@@ -36,31 +41,49 @@ namespace Assets.Scripts.Monobehaviours
         {
             Player = new Player();
             _instance = this;
-            entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             CreateGameManagerEntity();
-            CreateGameWorld();
             SetGameState(GameState.WaitingToStart);
+            SetSystemsEnabled(false);
         }
 
         public void CreateGameWorld()
         {
             BoardManager.GetInstance().CreateBoard();
-            //PieceManager.GetInstance().CreatePieces(Team.Invader);
-            PieceManager.GetInstance().CreatePieces(Team.Defender);
+            InitializeEnemyAi();
+            PieceManager.GetInstance().CreatePlayerPieces(EnemyAI);
+            PieceManager.GetInstance().CreatePlayerPieces(Player);
+        }
+
+        private void InitializeEnemyAi()
+        {
+            EnemyAI = new Player
+            {
+                ChosenOpening = RandomizeOpening(),
+                Team = SwapTeam(Player.Team)
+            };
+        }
+
+        private static string RandomizeOpening()
+        {
+            var openingList = new Dictionaries().openingList;
+            var random = new Random();
+            var i = random.Next(openingList.Count);
+            return openingList[i];
         }
 
         private void CreateGameManagerEntity()
         {
-            EntityArchetype entityGmArchetype = entityManager.CreateArchetype(
+            EntityArchetype entityGmArchetype = _entityManager.CreateArchetype(
                 typeof(GameManagerComponent)
             );
-            Entity gm = entityManager.CreateEntity(entityGmArchetype);
+            Entity gm = _entityManager.CreateEntity(entityGmArchetype);
         }
 
         public void SetGameState(GameState gameState, Team team = Team.Invader)
         {
-            Entity gmEntity = entityManager.CreateEntityQuery(typeof(GameManagerComponent)).GetSingletonEntity();
-            entityManager.SetComponentData<GameManagerComponent>(gmEntity, new GameManagerComponent
+            Entity gmEntity = _entityManager.CreateEntityQuery(typeof(GameManagerComponent)).GetSingletonEntity();
+            _entityManager.SetComponentData<GameManagerComponent>(gmEntity, new GameManagerComponent
             {
                 gameState = gameState,
                 teamToMove = team
@@ -69,8 +92,24 @@ namespace Assets.Scripts.Monobehaviours
 
         public void DestroyBoardAndPieces()
         {
-            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(CellTag)));
-            entityManager.DestroyEntity(entityManager.CreateEntityQuery((typeof(PieceComponent))));
+            _entityManager.DestroyEntity(_entityManager.CreateEntityQuery(typeof(CellTag)));
+            _entityManager.DestroyEntity(_entityManager.CreateEntityQuery((typeof(PieceComponent))));
+        }
+
+        public static Team SwapTeam(Team team)
+        {
+            return team == Team.Invader ? Team.Defender : Team.Invader;
+        }
+
+        public static void SetSystemsEnabled(bool enabled)
+        {
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().Enabled = enabled;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CapturedSystem>().Enabled = enabled;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<DragToMouseSystem>().Enabled = enabled;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<HighlightCellSystem>().Enabled = enabled;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
         }
     }
 }

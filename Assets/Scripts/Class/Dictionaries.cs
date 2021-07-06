@@ -30,5 +30,7 @@ namespace Assets.Scripts.Class
             { "Mothership", new OpeningArrangement().motherShipPieceArrangementArray},
             { "Box", new OpeningArrangement().boxPieceArrangementArray},
         };
-    }
+
+        public List<string> openingList = new List<string>() { "Default", "Blitzkrieg-Left", "Blitzkrieg-Right", "Mothership", "Box" };
+}
 }

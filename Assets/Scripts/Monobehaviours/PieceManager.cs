@@ -20,6 +20,11 @@ namespace Assets.Scripts.Monobehaviours
         private static PieceManager _instance;
         private float startingXCoordinate;
         private float startingYCoordinate;
+        private const float InvaderPieceStartingXCoordinate = -4f;
+        private const float InvaderPieceStartingYCoordinate = -2f;
+        private const float DefenderPieceStartingXCoordinate = 4f;
+        private const float DefenderPieceStartingYCoordinate = 1f;
+
 
         public static PieceManager GetInstance()
         {
@@ -29,7 +34,6 @@ namespace Assets.Scripts.Monobehaviours
         {
             _instance = this;
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-
         }
 
         public void CreatePieces(Team team)
@@ -153,7 +157,7 @@ namespace Assets.Scripts.Monobehaviours
                 var pieceRank = chosenOpenArray[yIndex, xIndex];
                 if (pieceRank != Piece.Null)
                 {
-                    var pieceLocation = Location.GetPieceCoordinate(xIndex, yIndex, PieceZ);
+                    var pieceLocation = GetPieceCoordinate(xIndex, yIndex, player.Team);
                     var pieceEntity = pieceArray[i];
                     i++;
 
@@ -194,6 +198,15 @@ namespace Assets.Scripts.Monobehaviours
 
             pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
             entityManager.CreateEntity(entityArchetype, pieceArray);
+        }
+
+        public static float3 GetPieceCoordinate(int xIndex, int yIndex, Team team)
+        {
+            float2 pieceCoordinate = team == Team.Invader
+                ? new float2(InvaderPieceStartingXCoordinate + xIndex, InvaderPieceStartingYCoordinate - yIndex)
+                : new float2(DefenderPieceStartingXCoordinate -xIndex, DefenderPieceStartingYCoordinate + yIndex);
+
+            return new float3(pieceCoordinate, PieceZ);
         }
     }
 }

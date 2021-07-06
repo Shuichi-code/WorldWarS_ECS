@@ -1,7 +1,5 @@
 using Assets.Scripts.Class;
-using Assets.Scripts.Components;
 using Assets.Scripts.Systems;
-using Assets.Scripts.Tags;
 using Unity.Entities;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -33,7 +31,7 @@ namespace Assets.Scripts.Monobehaviours
             gameOverUI.SetActive(true);
 
             GameManager.GetInstance().SetGameState(GameState.Dead);
-            SetSystemsEnabled(false);
+            GameManager.SetSystemsEnabled(false);
 
             //activate the canvas and print the winner
             winnerLabel.text = winnerLabel != null ? (winningTeam == Team.Invader ? "Invader" : "Defender") : "WinnerLabel is null.";
@@ -72,20 +70,8 @@ namespace Assets.Scripts.Monobehaviours
             GameManager.GetInstance().DestroyBoardAndPieces();
             GameManager.GetInstance().CreateGameWorld();
             GameManager.GetInstance().SetGameState(GameState.Playing);
-            SetSystemsEnabled(true);
+            GameManager.SetSystemsEnabled(true);
             gameOverUI.SetActive(false);
-        }
-
-
-        private static void SetSystemsEnabled(bool enabled)
-        {
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CapturedSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<DragToMouseSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<HighlightCellSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
         }
     }
 }

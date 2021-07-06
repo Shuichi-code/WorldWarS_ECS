@@ -73,7 +73,7 @@ namespace Assets.Scripts.Systems
                                 break;
 
                             case FightResult.FlagDestroyed:
-                                var teamWinner = (defendingRank == Piece.Flag ? attackingTeam : SwapTeam(attackingTeam));
+                                var teamWinner = (defendingRank == Piece.Flag ? attackingTeam : GameManager.SwapTeam(attackingTeam));
                                 DeclareWinner(ecb, eventEntityArchetype, teamWinner);
                                 break;
 
@@ -93,7 +93,7 @@ namespace Assets.Scripts.Systems
                     }
 
                     if (HasFlagAlreadyPassedLastCell(flagPassedQuery))
-                        DeclareWinner(ecb, eventEntityArchetype, SwapTeam(attackingTeam));
+                        DeclareWinner(ecb, eventEntityArchetype, GameManager.SwapTeam(attackingTeam));
 
                     ChangeTurn(attackingTeam);
 
@@ -110,7 +110,7 @@ namespace Assets.Scripts.Systems
 
         private static void ChangeTurn(Team attackingTeam)
         {
-            GameManager.GetInstance().SetGameState(GameState.Playing, SwapTeam(attackingTeam));
+            GameManager.GetInstance().SetGameState(GameState.Playing, GameManager.SwapTeam(attackingTeam));
         }
 
         private static bool HasFlagAlreadyPassedLastCell(EntityQuery flagPassedQuery)
@@ -132,11 +132,6 @@ namespace Assets.Scripts.Systems
         private bool IsPieceOnLastCell(ArbiterComponent arbiter, Team attackingTeam)
         {
             return (attackingTeam == Team.Defender && HasComponent<LastCellsForDefenderTag>(arbiter.battlegroundCellEntity)) || (attackingTeam == Team.Invader && HasComponent<LastCellsForInvaderTag>(arbiter.battlegroundCellEntity));
-        }
-
-        public static Team SwapTeam(Team team)
-        {
-            return team == Team.Invader ? Team.Defender : Team.Invader;
         }
 
         private static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype, Team winningTeam)
