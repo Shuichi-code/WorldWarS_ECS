@@ -24,7 +24,11 @@ namespace Assets.Scripts.Class
         };
         public Dictionary<string, int[,]> mOpenings = new System.Collections.Generic.Dictionary<string, int[,]>()
         {
-            { "Default", new OpeningArrangement().defaultArrangementArray}
+            { "Default", new OpeningArrangement().defaultArrangementArray},
+            { "Blitzkrieg-Left", new OpeningArrangement().blitzkriegLeftPieceArrangementArray},
+            { "Blitzkrieg-Right", new OpeningArrangement().blitzkriegRightPieceArrangementArray},
+            { "Mothership", new OpeningArrangement().motherShipPieceArrangementArray},
+            { "Box", new OpeningArrangement().boxPieceArrangementArray},
         };
     }
 }
