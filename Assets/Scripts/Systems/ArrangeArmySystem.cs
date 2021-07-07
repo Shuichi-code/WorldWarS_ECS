@@ -1,6 +1,7 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Monobehaviours.Managers;
+using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -20,7 +21,6 @@ namespace Assets.Scripts.Systems
             // Find the ECB system once and store it for later usage
             ecbSystem = World
                 .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-
             entityManager = World.EntityManager;
         }
 
@@ -28,49 +28,69 @@ namespace Assets.Scripts.Systems
         {
             bool mouseButtonPressed = Input.GetMouseButtonDown(0);
             float3 roundedWorldPos = Location.GetRoundedMousePosition();
-            Team playerTeam = GameManager.GetInstance().Player.Team;
             var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
             var ecbRun = ecbSystem.CreateCommandBuffer();
-            Entities.
-                WithAll<PieceComponent>().
-                ForEach((Entity pieceEntity, int entityInQueryIndex, in Translation pieceTranslation, in PieceComponent piece) =>
-                {
-                    var pieceRoundedLocation = math.round(pieceTranslation.Value);
-                    if (Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) && piece.team == playerTeam && mouseButtonPressed && !HasComponent<HighlightedTag>(pieceEntity))
-                    {
-                        ecbRun.AddComponent<HighlightedTag>(pieceEntity);
-                    }
-                }).Run();
 
-            var highlightedPiecesQuery = GetEntityQuery(ComponentType.ReadOnly<PieceComponent>(),
+            var highlightedCellQuery = GetEntityQuery(ComponentType.ReadOnly<CellTag>(),
                 ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<Translation>());
-            if (highlightedPiecesQuery.CalculateEntityCount() > 1)
+            var highlightedPieceQuery = GetEntityQuery(ComponentType.ReadOnly<PieceComponent>(),
+                ComponentType.ReadOnly<HighlightedTag>(), typeof(Translation));
+
+            Entities.
+                WithAny<CellTag, PieceComponent>().
+                ForEach((Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
+                {
+                    var pieceRoundedLocation = math.round(cellTranslation.Value);
+                    if (Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) && mouseButtonPressed && !HasComponent<HighlightedTag>(cellEntity))
+                    {
+                        Tag.TagCellAsHighlighted(ecb, entityInQueryIndex, cellEntity);
+                    }
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(this.Dependency);
+
+            if (highlightedCellQuery.CalculateEntityCount() <= 1) return;
+            var cellTranslations = highlightedCellQuery.ToComponentDataArray<Translation>(Allocator.Temp);
+            var pieceTranslations = highlightedPieceQuery.ToComponentDataArray<Translation>(Allocator.Temp);
+
+            if (highlightedPieceQuery.CalculateEntityCount() != 0)
             {
-                SwapPiecePlaces(highlightedPiecesQuery);
-                RemoveHighlightedPieces(ecb);
+                var firstTranslation = highlightedPieceQuery.CalculateEntityCount() < 2 ? cellTranslations[0] : pieceTranslations[0];
+                var secondTranslation = highlightedPieceQuery.CalculateEntityCount() < 2 ? cellTranslations[1] : pieceTranslations[1];
+
+                SwapPieces(firstTranslation, secondTranslation, ecb);
             }
+            RemoveHighlightedEntities(ecb);
         }
 
-        private void SwapPiecePlaces(EntityQuery highlightedPiecesQuery)
+        private void SwapPieces(Translation firstCellTranslation, Translation secondCellTranslation, EntityCommandBuffer.ParallelWriter ecb)
         {
-            var highlightedPieceTranslation = highlightedPiecesQuery.ToComponentDataArray<Translation>(Allocator.Temp);
-            var highlightedEntityArray = highlightedPiecesQuery.ToEntityArray(Allocator.Temp);
+            Entities.WithAll<PieceComponent, HighlightedTag>().ForEach(
+                (Entity pieceEntity, int entityInQueryIndex, ref Translation pieceTranslation) =>
+                {
+                    var newPieceLocation = GetNewPieceLocation(firstCellTranslation, secondCellTranslation, pieceTranslation);
 
-            entityManager.SetComponentData(highlightedEntityArray[0], new Translation
-            {
-                Value = highlightedPieceTranslation[1].Value
-            });
-            entityManager.SetComponentData(highlightedEntityArray[1], new Translation
-            {
-                Value = highlightedPieceTranslation[0].Value
-            });
+                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new Translation
+                    {
+                        Value = newPieceLocation
+                    });
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(this.Dependency);
         }
 
-        private void RemoveHighlightedPieces(EntityCommandBuffer.ParallelWriter ecb)
+        private static float3 GetNewPieceLocation(Translation firstTranslation, Translation secondTranslation, Translation pieceTranslation)
         {
-            Entities.WithAll<HighlightedTag>().ForEach((Entity pieceEntity, int entityInQueryIndex) =>
+            return Location.IsMatchLocation(pieceTranslation.Value, firstTranslation.Value)
+                ? secondTranslation.Value
+                : firstTranslation.Value;
+        }
+
+        private void RemoveHighlightedEntities(EntityCommandBuffer.ParallelWriter ecb)
+        {
+            Entities.
+                WithAll<HighlightedTag>().
+                ForEach((Entity highlightedEntity, int entityInQueryIndex) =>
             {
-                Tag.RemoveHighlightedTag(ecb, entityInQueryIndex, pieceEntity);
+                Tag.RemoveHighlightedTag(ecb, entityInQueryIndex, highlightedEntity);
             }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);
         }
