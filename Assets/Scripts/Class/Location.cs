@@ -2,6 +2,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Assets.Scripts.Class
 {
@@ -43,6 +44,11 @@ namespace Assets.Scripts.Class
         public static bool IsMatchLocation(float3 cellLocation, float3 selectedPieceLocation)
         {
             return math.distance(RemoveZ(selectedPieceLocation), RemoveZ(cellLocation)) == 0;
+        }
+
+        public static float3 GetRoundedMousePosition()
+        {
+            return math.round(Camera.main.ScreenToWorldPoint(Input.mousePosition));
         }
     }
 }
