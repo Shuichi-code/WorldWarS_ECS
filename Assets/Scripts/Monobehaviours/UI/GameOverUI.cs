@@ -1,4 +1,5 @@
 using Assets.Scripts.Class;
+using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Systems;
 using Unity.Entities;
 using UnityEngine;

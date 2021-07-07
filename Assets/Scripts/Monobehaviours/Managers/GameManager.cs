@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Assets.Scripts.Class;
+﻿using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Systems;
 using Assets.Scripts.Tags;
@@ -7,7 +6,7 @@ using Unity.Entities;
 using UnityEngine;
 using Random = System.Random;
 
-namespace Assets.Scripts.Monobehaviours
+namespace Assets.Scripts.Monobehaviours.Managers
 {
     public class GameManager : MonoBehaviour
     {
@@ -37,11 +36,16 @@ namespace Assets.Scripts.Monobehaviours
             return _instance;
         }
 
-        private void Start()
+        void Awake()
         {
             Player = new Player();
             _instance = this;
             _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        }
+
+        private void Start()
+        {
+
             CreateGameManagerEntity();
             SetGameState(GameState.WaitingToStart);
             SetSystemsEnabled(false);
@@ -110,6 +114,12 @@ namespace Assets.Scripts.Monobehaviours
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
+        }
+
+        public void StartGame()
+        {
+            SetGameState(GameState.Playing);
+            SetSystemsEnabled(true);
         }
     }
 }

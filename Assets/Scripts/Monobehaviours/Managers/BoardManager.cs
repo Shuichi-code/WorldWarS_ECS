@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace Assets.Scripts.Monobehaviours
+namespace Assets.Scripts.Monobehaviours.Managers
 {
     public class BoardManager : MonoBehaviour
     {
@@ -96,6 +96,7 @@ namespace Assets.Scripts.Monobehaviours
             {
                 if (!Location.IsMatchLocation(cellPositionArray[j], piecePosition)) continue;
                 entityManager.AddComponent<PieceOnCellComponent>(boardArray[j]);
+                //Debug.Log("Setting Piece entity to cell");
                 entityManager.SetComponentData(boardArray[j],
                     new PieceOnCellComponent
                     {

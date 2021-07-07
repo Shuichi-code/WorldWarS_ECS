@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Assets.Scripts.Class;
+using Assets.Scripts.Monobehaviours.Managers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -69,11 +70,12 @@ namespace Assets.Scripts.Monobehaviours
             initializingUI.SetActive(false);
             _gameManager = GameManager.GetInstance();
             _gameManager.SetGameState(GameState.PlacingPieces);
-            //pass the chosenopening to piecemanager to arrange the pieces.
 
             _gameManager.Player.ChosenOpening = chosenOpening;
             _gameManager.Player.Team = Team.Invader;
             _gameManager.CreateGameWorld();
+
+            GameObject.Find("PlacingPiecesUI").SetActive(true);
         }
     }
 }

@@ -6,7 +6,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace Assets.Scripts.Monobehaviours
+namespace Assets.Scripts.Monobehaviours.Managers
 {
     public class PieceManager : MonoBehaviour
     {
@@ -151,15 +151,15 @@ namespace Assets.Scripts.Monobehaviours
             //set the player pieces based on the arrangement
             int xIndex = 0;
             int yIndex = 0;
-            var i = 0;
+            var pieceEntityIndex = 0;
             while (xIndex < 9)
             {
                 var pieceRank = chosenOpenArray[yIndex, xIndex];
                 if (pieceRank != Piece.Null)
                 {
                     var pieceLocation = GetPieceCoordinate(xIndex, yIndex, player.Team);
-                    var pieceEntity = pieceArray[i];
-                    i++;
+                    var pieceEntity = pieceArray[pieceEntityIndex];
+
 
                     SetPieceEntityLocation(pieceEntity, pieceLocation);
 
@@ -171,7 +171,8 @@ namespace Assets.Scripts.Monobehaviours
                             team = player.Team
                         }
                     );
-                    //  BoardManager.GetInstance().SetPiecesOnCellsAsReference(xIndex + yIndex, pieceLocation, pieceArray);
+                    BoardManager.GetInstance().SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray);
+                    pieceEntityIndex++;
                 }
 
                 xIndex++;
