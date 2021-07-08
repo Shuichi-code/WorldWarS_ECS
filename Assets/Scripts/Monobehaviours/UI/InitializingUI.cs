@@ -19,7 +19,12 @@ namespace Assets.Scripts.Monobehaviours
 
         private ListView openingListView;
         private GameManager _gameManager;
+        private GameObject placingPiecesUI;
 
+        void Start()
+        {
+            placingPiecesUI = GameObject.Find("PlacingPiecesUI");
+        }
         void OnEnable()
         {
             var root = GetComponent<UIDocument>();
@@ -75,7 +80,7 @@ namespace Assets.Scripts.Monobehaviours
             _gameManager.Player.Team = Team.Invader;
             _gameManager.CreateGameWorld();
 
-            GameObject.Find("PlacingPiecesUI").SetActive(true);
+            placingPiecesUI.SetActive(true);
         }
     }
 }

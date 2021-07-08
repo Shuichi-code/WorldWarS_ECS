@@ -13,14 +13,12 @@ namespace Assets.Scripts.Monobehaviours.UI
         private GameObject initializingUI;
         private GameManager gameManager;
 
-        void Awake()
+        void OnEnable()
         {
             var root = GetComponent<UIDocument>();
             var rootVisualElement = root.rootVisualElement;
             rootVisualElement.Q(playButtonName)?.RegisterCallback<ClickEvent>(ev => StartGame());
             rootVisualElement.Q(returnButtonName)?.RegisterCallback<ClickEvent>(ev => ReturnToInitializing());
-
-
         }
 
         void Start()
@@ -28,11 +26,9 @@ namespace Assets.Scripts.Monobehaviours.UI
             placePieceUi = GameObject.Find("PlacingPiecesUI");
             initializingUI = GameObject.Find("InitializingUI");
             gameManager = GameManager.GetInstance();
-                if(gameManager == null)
-                    Debug.Log("Game Manager not yet initialized!");
         }
 
-        private void ReturnToInitializing()
+        public void ReturnToInitializing()
         {
             gameManager.SetGameState(GameState.WaitingToStart);
             placePieceUi.SetActive(false);
@@ -42,9 +38,9 @@ namespace Assets.Scripts.Monobehaviours.UI
 
         private void StartGame()
         {
+            Debug.Log("Starting Game!");
             gameManager.StartGame();
             placePieceUi.SetActive(false);
         }
-
     }
 }

@@ -18,12 +18,14 @@ namespace Assets.Scripts.Monobehaviours
         [SerializeField] private GameObject gameOverUI;
 
         private EntityManager entityManager;
+        private GameObject placePieceUi;
 
         private void Start()
         {
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().OnGameWin += GameOverUI_OnGameWin;
             gameOverUI.SetActive(false);
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            placePieceUi = GameObject.Find("PlacingPiecesUI");
         }
 
         private void GameOverUI_OnGameWin(Team winningTeam)
@@ -70,8 +72,7 @@ namespace Assets.Scripts.Monobehaviours
             //reset the pieces
             GameManager.GetInstance().DestroyBoardAndPieces();
             GameManager.GetInstance().CreateGameWorld();
-            GameManager.GetInstance().SetGameState(GameState.Playing);
-            GameManager.SetSystemsEnabled(true);
+            placePieceUi.SetActive(true);
             gameOverUI.SetActive(false);
         }
     }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using UnityEngine;
 
 namespace Assets.Scripts.Class
 {
@@ -11,5 +7,7 @@ namespace Assets.Scripts.Class
         public Team Team { get; set; }
 
         public string ChosenOpening { get; set; }
+
+        public float TimeRemaining { get; set; }
     }
 }

@@ -38,7 +38,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         void Awake()
         {
-            Player = new Player();
+            Player = new Player {TimeRemaining = 120};
             _instance = this;
             _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         }
@@ -66,7 +66,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
             EnemyAI = new Player
             {
                 ChosenOpening = RandomizeOpening(),
-                Team = SwapTeam(Player.Team)
+                Team = SwapTeam(Player.Team),
+                TimeRemaining = 120
             };
         }
 
