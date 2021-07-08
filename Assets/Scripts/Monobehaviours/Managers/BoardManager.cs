@@ -62,9 +62,21 @@ namespace Assets.Scripts.Monobehaviours.Managers
                     );
 
                     TagEdgeCells(columns);
+                    TagHomeCells(columns);
                     boardIndex++;
                 }
             }
+        }
+
+        private void TagHomeCells(int columns)
+        {
+            var homeTeam = columns < 3 ? Team.Invader : columns > 6 ? Team.Defender : Team.Null;
+            if (homeTeam == Team.Null) return;
+            entityManager.AddComponent(boardArray[boardIndex], typeof(HomeCellComponent));
+            entityManager.SetComponentData(boardArray[boardIndex], new HomeCellComponent
+            {
+                homeTeam = homeTeam
+            });
         }
 
         /// <summary>

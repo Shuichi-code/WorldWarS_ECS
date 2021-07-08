@@ -42,7 +42,7 @@ namespace Assets.Scripts.Monobehaviours.UI
 
         private void StartGame()
         {
-            GameManager.GetInstance().StartGame();
+            gameManager.StartGame();
             placePieceUi.SetActive(false);
         }
 

@@ -57,14 +57,14 @@ namespace Assets.Scripts.Systems
                     Entity originalCellEntity = Location.GetMatchedEntity(cellEntities, cellTranslation, piece.originalCellPosition);
                     Entity newCellEntity = Location.GetMatchedEntity(cellEntities, cellTranslation, math.round(pieceTranslation.Value));
                     Entity enemyCell = Location.GetMatchedEntity(enemyCellEntities, enemyCellTranslation, math.round(pieceTranslation.Value));
-                    Entity enemyPiece = GetEnemyPiece(pieceOnCellComponentArray, enemyCell);
+                    Entity enemyPieceEntity = GetEnemyPiece(pieceOnCellComponentArray, enemyCell);
 
                     if (IsValidMove(highlightedCellTranslation, enemyCellTranslation, pieceTranslation))
                     {
                         ecb.RemoveComponent<PieceOnCellComponent>(originalCellEntity);
                         if (newCellEntity != Entity.Null)
                         {
-                            CreateArbiter(ecb, e, enemyPiece, newCellEntity, originalCellEntity);
+                            CreateArbiter(ecb, e, enemyPieceEntity, newCellEntity, originalCellEntity);
                         }
 
                         pieceTranslation.Value = math.round(pieceTranslation.Value);

@@ -49,6 +49,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
             CreateGameManagerEntity();
             SetGameState(GameState.WaitingToStart);
             SetSystemsEnabled(false);
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = false;
         }
 
         public void CreateGameWorld()
@@ -57,6 +58,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
             InitializeEnemyAi();
             PieceManager.GetInstance().CreatePlayerPieces(EnemyAI);
             PieceManager.GetInstance().CreatePlayerPieces(Player);
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = true;
         }
 
         private void InitializeEnemyAi()
@@ -114,12 +116,14 @@ namespace Assets.Scripts.Monobehaviours.Managers
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
+
         }
 
         public void StartGame()
         {
             SetGameState(GameState.Playing);
             SetSystemsEnabled(true);
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = false;
         }
     }
 }
