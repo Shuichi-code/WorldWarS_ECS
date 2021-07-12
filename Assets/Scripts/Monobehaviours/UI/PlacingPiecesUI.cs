@@ -12,7 +12,14 @@ namespace Assets.Scripts.Monobehaviours.UI
         private GameObject placePieceUi;
         private GameObject initializingUI;
         private GameManager gameManager;
+        private GameObject gameOverlayUI;
 
+        void Awake()
+        {
+            placePieceUi = GameObject.Find("PlacingPiecesUI");
+            initializingUI = GameObject.Find("InitializingUI");
+            gameOverlayUI = GameObject.Find("GameOverlayUI");
+        }
         void OnEnable()
         {
             var root = GetComponent<UIDocument>();
@@ -23,8 +30,6 @@ namespace Assets.Scripts.Monobehaviours.UI
 
         void Start()
         {
-            placePieceUi = GameObject.Find("PlacingPiecesUI");
-            initializingUI = GameObject.Find("InitializingUI");
             gameManager = GameManager.GetInstance();
         }
 
@@ -38,9 +43,10 @@ namespace Assets.Scripts.Monobehaviours.UI
 
         private void StartGame()
         {
-            Debug.Log("Starting Game!");
-            gameManager.StartGame();
+
             placePieceUi.SetActive(false);
+            gameOverlayUI.SetActive(true);
+            gameManager.StartGame();
         }
     }
 }

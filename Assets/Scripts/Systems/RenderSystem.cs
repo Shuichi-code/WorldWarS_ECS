@@ -1,6 +1,5 @@
 ﻿using Assets.Scripts.Class;
 using Assets.Scripts.Components;
-using Assets.Scripts.Monobehaviours;
 using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Tags;
 using Unity.Entities;

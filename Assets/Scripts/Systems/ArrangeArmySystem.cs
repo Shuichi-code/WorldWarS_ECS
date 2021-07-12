@@ -89,14 +89,14 @@ namespace Assets.Scripts.Systems
             Entities.WithAny<CellTag, PieceComponent, HomeCellComponent>().ForEach(
                 (Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
                 {
-                    var pieceTeam = HasComponent<PieceComponent>(cellEntity)? GetComponent<PieceComponent>(cellEntity).team :Team.Null;
+                    var pieceTeam = HasComponent<PieceComponent>(cellEntity) ? GetComponent<PieceComponent>(cellEntity).team : Team.Null;
                     var cellTeam = HasComponent<HomeCellComponent>(cellEntity)
                         ? GetComponent<HomeCellComponent>(cellEntity).homeTeam
                         : Team.Null;
 
                     var pieceRoundedLocation = math.round(cellTranslation.Value);
                     if (Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) && mouseButtonPressed &&
-                        !HasComponent<HighlightedTag>(cellEntity) && (playerTeam == pieceTeam || playerTeam == cellTeam) )
+                        !HasComponent<HighlightedTag>(cellEntity) && (playerTeam == pieceTeam || playerTeam == cellTeam))
                     {
                         Tag.TagCellAsHighlighted(ecb, entityInQueryIndex, cellEntity);
                     }

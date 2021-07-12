@@ -19,13 +19,20 @@ namespace Assets.Scripts.Monobehaviours
 
         private EntityManager entityManager;
         private GameObject placePieceUi;
+        private GameObject gameOverlayUi;
+        private GameManager gameManager;
+
+        void Awake()
+        {
+            placePieceUi = GameObject.Find(GameConstants.PlacingpiecesuiName);
+            gameOverlayUi = GameObject.Find(GameConstants.GameoverlayUIName);
+        }
 
         private void Start()
         {
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().OnGameWin += GameOverUI_OnGameWin;
             gameOverUI.SetActive(false);
-            entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            placePieceUi = GameObject.Find("PlacingPiecesUI");
+            gameManager = GameManager.GetInstance();
         }
 
         private void GameOverUI_OnGameWin(Team winningTeam)
@@ -33,7 +40,7 @@ namespace Assets.Scripts.Monobehaviours
 
             gameOverUI.SetActive(true);
 
-            GameManager.GetInstance().SetGameState(GameState.Dead);
+            gameManager.SetGameState(GameState.Dead);
             GameManager.SetSystemsEnabled(false);
 
             //activate the canvas and print the winner
@@ -70,9 +77,10 @@ namespace Assets.Scripts.Monobehaviours
         private void Reset()
         {
             //reset the pieces
-            GameManager.GetInstance().DestroyBoardAndPieces();
-            GameManager.GetInstance().CreateGameWorld();
+            gameManager.DestroyBoardAndPieces();
+            gameManager.CreateGameWorld();
             placePieceUi.SetActive(true);
+            gameOverlayUi.SetActive(false);
             gameOverUI.SetActive(false);
         }
     }

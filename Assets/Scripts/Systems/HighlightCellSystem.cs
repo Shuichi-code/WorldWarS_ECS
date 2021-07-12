@@ -22,7 +22,7 @@ public class HighlightCellSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        bool mouseButtonUp = Input.GetMouseButtonUp(0);
+        var mouseButtonUp = Input.GetMouseButtonUp(0);
         var pieceQuery = GetEntityQuery(ComponentType.ReadOnly<SelectedTag>(), ComponentType.ReadOnly<PieceComponent>());
         if (pieceQuery.CalculateEntityCount() == 0)
             return;

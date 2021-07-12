@@ -1,7 +1,7 @@
 using Assets.Scripts.Class;
 using NUnit.Framework;
 
-namespace Assets.Editor.MTests
+namespace Assets.Editor.TestScripts
 {
     [TestFixture]
     public class FightCalculatorTests

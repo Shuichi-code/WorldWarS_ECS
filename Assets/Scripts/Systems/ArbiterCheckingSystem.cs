@@ -1,6 +1,5 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
-using Assets.Scripts.Monobehaviours;
 using Assets.Scripts.Monobehaviours.Managers;
 using Unity.Entities;
 using UnityEngine;
@@ -78,6 +77,9 @@ namespace Assets.Scripts.Systems
                                 DeclareWinner(ecb, eventEntityArchetype, teamWinner);
                                 break;
 
+                            case FightResult.NoFight:
+                                Debug.Log("No fight has occured.");
+                                break;
                             default:
                                 Debug.Log("Switch turned to default!");
                                 break;
@@ -86,10 +88,10 @@ namespace Assets.Scripts.Systems
 
                     if (fightResult != FightResult.BothLose)
                     {
-                        if(!HasComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity))
+                        if (!HasComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity))
                             ecb.AddComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity);
                         ecb.SetComponent(arbiter.battlegroundCellEntity, new PieceOnCellComponent { PieceEntity = arbiter.attackingPieceEntity });
-                        if(attackingRank == Piece.Flag)
+                        if (attackingRank == Piece.Flag)
                             CheckIfFlagIsOnLastCell(arbiter, attackingTeam, ecb);
                     }
 
@@ -135,7 +137,7 @@ namespace Assets.Scripts.Systems
             return (attackingTeam == Team.Defender && HasComponent<LastCellsForDefenderTag>(arbiter.battlegroundCellEntity)) || (attackingTeam == Team.Invader && HasComponent<LastCellsForInvaderTag>(arbiter.battlegroundCellEntity));
         }
 
-        private static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype, Team winningTeam)
+        public static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype, Team winningTeam)
         {
             Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
             entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeam = winningTeam });

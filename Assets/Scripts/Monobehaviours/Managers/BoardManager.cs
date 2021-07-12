@@ -23,6 +23,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private NativeArray<Entity> boardArray;
 
         private static BoardManager _instance;
+        private GameManager _gameManager;
 
         public static BoardManager GetInstance()
         {
@@ -33,24 +34,30 @@ namespace Assets.Scripts.Monobehaviours.Managers
         {
             _instance = this;
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        }   
+
+        void Start()
+        {
+            _gameManager = GameManager.GetInstance();
         }
         public void CreateBoard()
         {
             EntityArchetype entityManagerArchetype = entityManager.CreateArchetype(typeof(Translation), typeof(CellTag));
             boardArray = new NativeArray<Entity>(MaxRowCells * MaxColumnCells, Allocator.Temp);
             entityManager.CreateEntity(entityManagerArchetype, boardArray);
-            boardIndex = 0;
             PlaceCellsOnBoard();
         }
 
         public void PlaceCellsOnBoard()
         {
+            boardIndex = 0;
             for (int columns = 0; columns < MaxColumnCells; columns++)
             {
                 for (int rows = 0; rows < MaxRowCells; rows++)
                 {
-                    float startingXCoordinate = GameManager.GetInstance().startingXCoordinate;
-                    float startingYCoordinate = GameManager.GetInstance().startingYCoordinate;
+
+                    float startingXCoordinate = _gameManager.startingXCoordinate;
+                    float startingYCoordinate = _gameManager.startingYCoordinate;
 
                     float3 spawnPosition = new float3(startingXCoordinate + rows, startingYCoordinate + columns, CellZ);
                     cellPositionArray[boardIndex] = spawnPosition;

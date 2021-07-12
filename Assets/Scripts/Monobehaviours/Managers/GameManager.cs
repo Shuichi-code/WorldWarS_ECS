@@ -4,7 +4,9 @@ using Assets.Scripts.Systems;
 using Assets.Scripts.Tags;
 using Unity.Entities;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Random = System.Random;
+
 
 namespace Assets.Scripts.Monobehaviours.Managers
 {
@@ -24,7 +26,13 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public static string openingMode;
 
         private EntityArchetype entityArchetype;
-        private EntityManager _entityManager;
+        private EntityManager entityManager;
+        private Label playerTimerUILabel;
+        private Label enemyTimerUILabel;
+        private Entity gmEntity;
+        private GameObject gameOverUI;
+
+        const float PlayerClockDuration = 5f;
 
 
         public Player Player { get; set; }
@@ -38,27 +46,65 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         void Awake()
         {
-            Player = new Player {TimeRemaining = 120};
+            Player = new Player( );
             _instance = this;
-            _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         }
 
         private void Start()
         {
-
+            gameOverUI = GameObject.Find(GameConstants.GameoverlayUIName);
             CreateGameManagerEntity();
             SetGameState(GameState.WaitingToStart);
             SetSystemsEnabled(false);
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = false;
+
+        }
+
+        void Update()
+        {
+
+            if (GetGameState() != GameState.Playing) return;
+            CheckIfTimerExpire(Player, EnemyAI);
+
+            if (GetTeamToMove() == Team.Invader)
+            {
+                Player.TimeRemaining -= Time.deltaTime;
+                playerTimerUILabel.text = Player.GetTimeRemainingString();
+            }
+            else
+            {
+                EnemyAI.TimeRemaining -= Time.deltaTime;
+                enemyTimerUILabel.text = EnemyAI.GetTimeRemainingString();
+            }
+        }
+
+        private void CheckIfTimerExpire(Player player, Player enemy)
+        {
+            if (!(player.TimeRemaining <= 0) && !(enemy.TimeRemaining <= 0)) return;
+            var eventEntity = entityManager.CreateEntity(typeof(GameFinishedEventComponent));
+            entityManager.SetComponentData(eventEntity, new GameFinishedEventComponent
+            {
+                winningTeam = player.TimeRemaining <= 0 ? enemy.Team : player.Team
+            });
+
         }
 
         public void CreateGameWorld()
         {
             BoardManager.GetInstance().CreateBoard();
-            InitializeEnemyAi();
+            if(EnemyAI == null)
+                InitializeEnemyAi();
+            ResetPlayerClocks();
             PieceManager.GetInstance().CreatePlayerPieces(EnemyAI);
             PieceManager.GetInstance().CreatePlayerPieces(Player);
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = true;
+        }
+
+        private void ResetPlayerClocks()
+        {
+            Player.TimeRemaining = PlayerClockDuration;
+            EnemyAI.TimeRemaining = PlayerClockDuration;
         }
 
         private void InitializeEnemyAi()
@@ -67,7 +113,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
             {
                 ChosenOpening = RandomizeOpening(),
                 Team = SwapTeam(Player.Team),
-                TimeRemaining = 120
+                TimeRemaining = PlayerClockDuration
             };
         }
 
@@ -81,26 +127,36 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         private void CreateGameManagerEntity()
         {
-            EntityArchetype entityGmArchetype = _entityManager.CreateArchetype(
+            var entityGmArchetype = entityManager.CreateArchetype(
                 typeof(GameManagerComponent)
             );
-            Entity gm = _entityManager.CreateEntity(entityGmArchetype);
+            gmEntity = entityManager.CreateEntity(entityGmArchetype);
+
         }
 
         public void SetGameState(GameState gameState, Team team = Team.Invader)
         {
-            Entity gmEntity = _entityManager.CreateEntityQuery(typeof(GameManagerComponent)).GetSingletonEntity();
-            _entityManager.SetComponentData<GameManagerComponent>(gmEntity, new GameManagerComponent
+            entityManager.SetComponentData<GameManagerComponent>(gmEntity, new GameManagerComponent
             {
                 gameState = gameState,
                 teamToMove = team
             });
         }
 
+        public GameState GetGameState()
+        {
+            return entityManager.GetComponentData<GameManagerComponent>(gmEntity).gameState;
+        }
+
+        public Team GetTeamToMove()
+        {
+            return entityManager.GetComponentData<GameManagerComponent>(gmEntity).teamToMove;
+        }
+
         public void DestroyBoardAndPieces()
         {
-            _entityManager.DestroyEntity(_entityManager.CreateEntityQuery(typeof(CellTag)));
-            _entityManager.DestroyEntity(_entityManager.CreateEntityQuery((typeof(PieceComponent))));
+            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(CellTag)));
+            entityManager.DestroyEntity(entityManager.CreateEntityQuery((typeof(PieceComponent))));
         }
 
         public static Team SwapTeam(Team team)
@@ -117,14 +173,20 @@ namespace Assets.Scripts.Monobehaviours.Managers
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
-
         }
 
         public void StartGame()
         {
             SetGameState(GameState.Playing);
+            playerTimerUILabel = GetPlayerTimerLabel(gameOverUI, GameConstants.PlayertimerName);
+            enemyTimerUILabel = GetPlayerTimerLabel(gameOverUI, GameConstants.EnemytimerName);
             SetSystemsEnabled(true);
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = false;
+        }
+
+        public Label GetPlayerTimerLabel(GameObject gameOverUI, string playerName)
+        {
+            return gameOverUI.GetComponent<UIDocument>().rootVisualElement.Q<Label>(playerName);
         }
     }
 }

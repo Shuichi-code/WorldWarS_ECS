@@ -1,6 +1,6 @@
+using Assets.Scripts.Class;
 using System;
 using System.Collections.Generic;
-using Assets.Scripts.Class;
 using Assets.Scripts.Monobehaviours.Managers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,10 +20,13 @@ namespace Assets.Scripts.Monobehaviours
         private ListView openingListView;
         private GameManager _gameManager;
         private GameObject placingPiecesUI;
+        private GameObject gameOverlayUI;
 
         void Start()
         {
             placingPiecesUI = GameObject.Find("PlacingPiecesUI");
+            gameOverlayUI = GameObject.Find("GameOverlayUI");
+            _gameManager = GameManager.GetInstance();
         }
         void OnEnable()
         {
@@ -73,9 +76,8 @@ namespace Assets.Scripts.Monobehaviours
             string chosenOpening = openingListView.selectedItem.ToString();
             //hide the initializing UI
             initializingUI.SetActive(false);
-            _gameManager = GameManager.GetInstance();
-            _gameManager.SetGameState(GameState.PlacingPieces);
 
+            _gameManager.SetGameState(GameState.PlacingPieces);
             _gameManager.Player.ChosenOpening = chosenOpening;
             _gameManager.Player.Team = Team.Invader;
             _gameManager.CreateGameWorld();

@@ -20,6 +20,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private static PieceManager _instance;
         private float startingXCoordinate;
         private float startingYCoordinate;
+        private GameManager _gameManager;
         private const float InvaderPieceStartingXCoordinate = -4f;
         private const float InvaderPieceStartingYCoordinate = -2f;
         private const float DefenderPieceStartingXCoordinate = 4f;
@@ -34,6 +35,11 @@ namespace Assets.Scripts.Monobehaviours.Managers
         {
             _instance = this;
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        }
+
+        void Start()
+        {
+            _gameManager = GameManager.GetInstance();
         }
 
         public void CreatePieces(Team team)
@@ -56,7 +62,6 @@ namespace Assets.Scripts.Monobehaviours.Managers
             }
         }
 
-        //TODO: Finish this.
         private void PlayerPlacePieces(Team team)
         {
             int xIndex = 0;
@@ -66,8 +71,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
                 int pieceRank = openingArrangement.defaultArrangementArray[xIndex, yIndex];
                 if (pieceRank != 15) //15 is null value;
                 {
-                    startingXCoordinate = GameManager.GetInstance().startingXCoordinate;
-                    startingYCoordinate = GameManager.GetInstance().startingYCoordinate;
+
+                    startingXCoordinate = _gameManager.startingXCoordinate;
+                    startingYCoordinate = _gameManager.startingYCoordinate;
                     //place cells on x-index
                     int xCoordinate = yIndex + (int) startingXCoordinate;
                     int yCoordinate = xIndex + (int) startingYCoordinate;
@@ -92,8 +98,6 @@ namespace Assets.Scripts.Monobehaviours.Managers
                 xIndex++;
                 yIndex = 0;
             }
-            //place the pieces according to openingFormation
-            //set game state to placingpieces
         }
 
         public void DefaultPlacePieces(Team team)
