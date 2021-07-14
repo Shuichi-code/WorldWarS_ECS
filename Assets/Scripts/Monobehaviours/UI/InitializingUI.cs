@@ -2,6 +2,7 @@ using Assets.Scripts.Class;
 using System;
 using System.Collections.Generic;
 using Assets.Scripts.Monobehaviours.Managers;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
@@ -78,9 +79,8 @@ namespace Assets.Scripts.Monobehaviours
             initializingUI.SetActive(false);
 
             _gameManager.SetGameState(GameState.PlacingPieces);
-            _gameManager.Player.ChosenOpening = chosenOpening;
-            _gameManager.Player.Team = Team.Invader;
-            _gameManager.CreateGameWorld();
+            var chosenOpening32 = (FixedString32) chosenOpening;
+            _gameManager.CreateGameWorld(chosenOpening32, Team.Invader);
 
             placingPiecesUI.SetActive(true);
         }

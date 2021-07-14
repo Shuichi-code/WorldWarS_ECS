@@ -6,31 +6,37 @@ namespace Assets.Scripts.Class
     {
         public Dictionary<int, string> mPieceRank = new System.Collections.Generic.Dictionary<int, string>()
         {
-            { 0,"Spy"},
-            { 1,"G5S" },
-            { 2,"G4S" },
-            { 3,"LtG"},
-            { 4,"MjG"},
-            { 5,"BrG"},
-            { 6,"Col"},
-            { 7,"LtCol"},
-            { 8,"Maj" },
-            { 9,"Cpt"},
-            { 10,"1Lt"},
-            { 11,"2Lt"},
-            { 12,"Sgt"},
-            { 13,"Pvt"},
-            { 14,"Flg"},
+            { Piece.Spy,"Spy"},
+            { Piece.FiveStarGeneral,"G5S" },
+            { Piece.FourStarGeneral,"G4S" },
+            { Piece.LieutenantGeneral,"LtG"},
+            { Piece.MajorGeneral,"MjG"},
+            { Piece.BrigadierGeneral,"BrG"},
+            { Piece.Colonel,"Col"},
+            { Piece.LieutenantColonel,"LtCol"},
+            { Piece.Major,"Maj" },
+            { Piece.Captain,"Cpt"},
+            { Piece.FirstLieutenant,"1Lt"},
+            { Piece.SecondLieutenant,"2Lt"},
+            { Piece.Sergeant,"Sgt"},
+            { Piece.Private,"Pvt"},
+            { Piece.Flag,"Flg"},
         };
         public Dictionary<string, int[,]> mOpenings = new System.Collections.Generic.Dictionary<string, int[,]>()
         {
-            { "Default", new OpeningArrangement().defaultArrangementArray},
-            { "Blitzkrieg-Left", new OpeningArrangement().blitzkriegLeftPieceArrangementArray},
-            { "Blitzkrieg-Right", new OpeningArrangement().blitzkriegRightPieceArrangementArray},
-            { "Mothership", new OpeningArrangement().motherShipPieceArrangementArray},
-            { "Box", new OpeningArrangement().boxPieceArrangementArray},
+            { DefaultArrangementString, new OpeningArrangement().defaultArrangementArray},
+            { BlitzkriegLeftString, new OpeningArrangement().blitzkriegLeftPieceArrangementArray},
+            { BlitzkriegRightString, new OpeningArrangement().blitzkriegRightPieceArrangementArray},
+            { MothershipString, new OpeningArrangement().motherShipPieceArrangementArray},
+            { BoxString, new OpeningArrangement().boxPieceArrangementArray},
         };
 
-        public List<string> openingList = new List<string>() { "Default", "Blitzkrieg-Left", "Blitzkrieg-Right", "Mothership", "Box" };
-}
+        public List<string> openingList = new List<string>() { DefaultArrangementString, BlitzkriegLeftString, BlitzkriegRightString, MothershipString, BoxString };
+
+        private const string DefaultArrangementString = "Default";
+        private const string BlitzkriegLeftString = "Blitzkrieg-Left";
+        private const string BlitzkriegRightString = "Blitzkrieg-Right";
+        private const string MothershipString = "Mothership";
+        private const string BoxString = "Box";
+    }
 }

@@ -16,7 +16,6 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         public const float PieceZ = 0f;
 
-        public readonly OpeningArrangement openingArrangement = new OpeningArrangement();
         private static PieceManager _instance;
         private float startingXCoordinate;
         private float startingYCoordinate;
@@ -42,115 +41,12 @@ namespace Assets.Scripts.Monobehaviours.Managers
             _gameManager = GameManager.GetInstance();
         }
 
-        public void CreatePieces(Team team)
-        {
-            entityArchetype = entityManager.CreateArchetype(
-                typeof(Translation),
-                typeof(PieceComponent)
-            );
-
-            pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
-            entityManager.CreateEntity(entityArchetype, pieceArray);
-
-            if (team == Team.Invader)
-            {
-                DefaultPlacePieces(team);
-            }
-            else
-            {
-                DefaultPlacePieces(team);
-            }
-        }
-
-        private void PlayerPlacePieces(Team team)
-        {
-            int xIndex = 0;
-            int yIndex = 0;
-            while (yIndex < 9)
-            {
-                int pieceRank = openingArrangement.defaultArrangementArray[xIndex, yIndex];
-                if (pieceRank != 15) //15 is null value;
-                {
-
-                    startingXCoordinate = _gameManager.startingXCoordinate;
-                    startingYCoordinate = _gameManager.startingYCoordinate;
-                    //place cells on x-index
-                    int xCoordinate = yIndex + (int) startingXCoordinate;
-                    int yCoordinate = xIndex + (int) startingYCoordinate;
-                    float3 piecePosition = new float3(xCoordinate, yCoordinate, PieceZ);
-                    Entity pieceEntity = pieceArray[xIndex + yIndex];
-
-                    entityManager.SetComponentData(pieceEntity, new Translation { Value = piecePosition });
-                    entityManager.SetComponentData(pieceEntity,
-                        new PieceComponent
-                        {
-                            originalCellPosition = piecePosition,
-                            pieceRank = pieceRank,
-                            team = team
-                        }
-                    );
-
-                    BoardManager.GetInstance().SetPiecesOnCellsAsReference(xIndex + yIndex, piecePosition, pieceArray);
-                }
-
-                yIndex++;
-                if (yIndex <= 9) continue;
-                xIndex++;
-                yIndex = 0;
-            }
-        }
-
-        public void DefaultPlacePieces(Team team)
-        {
-            int[] yCoordinateArray = SetColumnPlaces(team);
-            int pieceIndex = 0;
-            while (pieceIndex < 21)
-            {
-
-                float3 piecePosition = SetDefaultPieceCoordinates(yCoordinateArray, pieceIndex);
-
-                //Place the pieces on the board
-                entityManager.SetComponentData(pieceArray[pieceIndex], new Translation { Value = piecePosition });
-                entityManager.SetComponentData(pieceArray[pieceIndex],
-                    new PieceComponent
-                    {
-                        originalCellPosition = piecePosition,
-                        pieceRank = openingArrangement.defaultPieceArrangementArray[pieceIndex],
-                        team = team
-                    }
-                );
-
-                BoardManager.GetInstance().SetPiecesOnCellsAsReference(pieceIndex, piecePosition, pieceArray);
-                pieceIndex++;
-            }
-        }
-
-        /// <summary>
-        /// Sets the possible y-coordinates of the pieces based on the piece team color
-        /// </summary>
-        /// <param name="team"></param>
-        /// <returns></returns>
-        public static int[] SetColumnPlaces(Team team)
-        {
-            var columnsArray = team == Team.Invader ? new int[] { 2, 1, 0 } : new int[] { 5, 6, 7 };
-            return columnsArray;
-        }
-
-        public static float3 SetDefaultPieceCoordinates(int[] yCoordinateArray, int pieceIndex)
-        {
-            int startingXCoordinate = -4;
-            int startingYCoordinate = -4;
-            int xCoordinate = (pieceIndex < 9) ? (pieceIndex + startingXCoordinate) : (pieceIndex < 18) ? (pieceIndex - 9 + startingXCoordinate) : (pieceIndex - 18 + startingXCoordinate);
-            int yCoordinate = (pieceIndex < 9) ? (yCoordinateArray[0] + startingYCoordinate) : (pieceIndex < 18) ? (yCoordinateArray[1] + startingYCoordinate) : yCoordinateArray[2] + startingYCoordinate;
-            return new float3(xCoordinate, yCoordinate, PieceZ);
-        }
-
-        public void CreatePlayerPieces(Player player)
+        public void CreatePlayerPieces(FixedString32 chosenOpening, Team team)
         {
             CreatePlayerPieceEntities();
 
             //get arrangement based on chosenOpening
-            int[,] chosenOpenArray = new Dictionaries().mOpenings[player.ChosenOpening];
+            int[,] chosenOpenArray = new Dictionaries().mOpenings[chosenOpening.ToString()];
 
             //set the player pieces based on the arrangement
             int xIndex = 0;
@@ -161,7 +57,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
                 var pieceRank = chosenOpenArray[yIndex, xIndex];
                 if (pieceRank != Piece.Null)
                 {
-                    var pieceLocation = GetPieceCoordinate(xIndex, yIndex, player.Team);
+                    var pieceLocation = GetPieceCoordinate(xIndex, yIndex, team);
                     var pieceEntity = pieceArray[pieceEntityIndex];
 
 
@@ -172,7 +68,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
                         {
                             originalCellPosition = pieceLocation,
                             pieceRank = pieceRank,
-                            team = player.Team
+                            team = team
                         }
                     );
                     BoardManager.GetInstance().SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray);

@@ -21,10 +21,11 @@ namespace Assets.Scripts.Monobehaviours
         private GameObject placePieceUi;
         private GameObject gameOverlayUi;
         private GameManager gameManager;
+        private GameObject initializingUi;
 
         void Awake()
         {
-            placePieceUi = GameObject.Find(GameConstants.PlacingpiecesuiName);
+            initializingUi = GameObject.Find(GameConstants.InitializingUIName);
             gameOverlayUi = GameObject.Find(GameConstants.GameoverlayUIName);
         }
 
@@ -78,8 +79,8 @@ namespace Assets.Scripts.Monobehaviours
         {
             //reset the pieces
             gameManager.DestroyBoardAndPieces();
-            gameManager.CreateGameWorld();
-            placePieceUi.SetActive(true);
+
+            initializingUi.SetActive(true);
             gameOverlayUi.SetActive(false);
             gameOverUI.SetActive(false);
         }

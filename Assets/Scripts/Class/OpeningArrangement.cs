@@ -43,8 +43,14 @@
         public int[] randomArrangementArray = new int[]
         {
             1, 2, 3, 4, 5, 6, 7, 8, 9,
-            10, 11, 12, 13,13,13,13,13,13,
+            10, 11, 12, 13, 13, 13, 13, 13, 13,
             0, 0, 14
         };
+
+        public const int Default = 0;
+        public const int BlitzkriegLeft = 1;
+        public const int BlitzkriegRight = 2;
+        public const int Mothership = 4;
+        public const int Box = 5;
     }
 }

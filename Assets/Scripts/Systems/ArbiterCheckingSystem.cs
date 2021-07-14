@@ -26,12 +26,6 @@ namespace Assets.Scripts.Systems
 
         protected override void OnUpdate()
         {
-            #region CheckGameState
-
-            EntityQuery gmQuery = GetEntityQuery(typeof(GameManagerComponent));
-            Entity gmEntity = gmQuery.GetSingletonEntity();
-
-            #endregion CheckGameState
 
             #region Initializing Data
 
@@ -103,11 +97,14 @@ namespace Assets.Scripts.Systems
                     ecb.DestroyEntity(arbiterEntity);
                 }).WithoutBurst().Run();
 
+            CheckIfGameFinishedEventRaised();
+        }
+
+        private void CheckIfGameFinishedEventRaised()
+        {
             Entities
-                .ForEach((in GameFinishedEventComponent eventComponent) =>
-                {
-                    OnGameWin?.Invoke(eventComponent.winningTeam);
-                }).WithoutBurst().Run();
+                .ForEach((in GameFinishedEventComponent eventComponent) => { OnGameWin?.Invoke(eventComponent.winningTeam); })
+                .WithoutBurst().Run();
             EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
         }
 
