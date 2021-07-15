@@ -37,6 +37,10 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         public const float PlayerClockDuration = 5f;
 
+        public delegate void ActivateSystem(bool enabled);
+        public event ActivateSystem SetArrangementSystemStatus;
+        public event ActivateSystem SetSystemStatus;
+
         public static GameManager GetInstance()
         {
             return _instance;
@@ -86,7 +90,12 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
             pieceManager.CreatePlayerPieces(RandomizeOpening(), enemyTeam);
             pieceManager.CreatePlayerPieces(chosenOpening, team);
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = true;
+            SetArrangementStatus(true);
+        }
+
+        private void SetArrangementStatus(bool enabled)
+        {
+            SetArrangementSystemStatus?.Invoke(enabled);
         }
 
         private static string RandomizeOpening()
@@ -125,23 +134,16 @@ namespace Assets.Scripts.Monobehaviours.Managers
             return team == Team.Invader ? Team.Defender : Team.Invader;
         }
 
-        public static void SetSystemsEnabled(bool enabled)
+        public void SetSystemsEnabled(bool enabled)
         {
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CapturedSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<DragToMouseSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<HighlightCellSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CountdownSystem>().Enabled = enabled;
+            SetSystemStatus?.Invoke(enabled);
         }
 
         public void StartGame()
         {
             SetGameState(GameState.Playing);
             SetSystemsEnabled(true);
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = false;
+            SetArrangementStatus(false);
         }
     }
 }

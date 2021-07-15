@@ -42,7 +42,7 @@ namespace Assets.Scripts.Monobehaviours
             gameOverUI.SetActive(true);
 
             gameManager.SetGameState(GameState.Dead);
-            GameManager.SetSystemsEnabled(false);
+            gameManager.SetSystemsEnabled(false);
 
             //activate the canvas and print the winner
             winnerLabel.text = winnerLabel != null ? (winningTeam == Team.Invader ? "Invader" : "Defender") : "WinnerLabel is null.";
