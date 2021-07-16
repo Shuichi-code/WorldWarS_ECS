@@ -38,17 +38,17 @@ namespace Assets.Scripts.Systems
                 ForEach((Entity e, ref TimeComponent timeComponent, in TeamComponent team) =>
                 {
                     if (team.myTeam != teamToMove) return;
-                    if (math.round(timeComponent.TimeRemaining) == 0f)
+                    if (timeComponent.TimeRemaining < 0f)
                     {
-                        Debug.Log("Sending out finish event!");
+                        timeComponent.TimeRemaining = 0;
                         ArbiterCheckingSystem.DeclareWinner(ecb, entityArchetype, GameManager.SwapTeam(team.myTeam));
-                        ecb.RemoveComponent<TimeComponent>(e);
                     }
                     else
                     {
                         timeComponent.TimeRemaining -= delta;
                         var eventEntity = ecb.CreateEntity(clockEntityArchetype);
-                        ecb.AddComponent(eventEntity, new CountdownEventComponent() { winningTeam = team.myTeam, Time = timeComponent.TimeRemaining });
+                        ecb.AddComponent(eventEntity,
+                            new CountdownEventComponent() { winningTeam = team.myTeam, Time = timeComponent.TimeRemaining });
                     }
                 }).Schedule();
             Dependency.Complete();

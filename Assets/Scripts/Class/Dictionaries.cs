@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace Assets.Scripts.Class
 {
@@ -32,6 +35,8 @@ namespace Assets.Scripts.Class
         };
 
         public List<string> openingList = new List<string>() { DefaultArrangementString, BlitzkriegLeftString, BlitzkriegRightString, MothershipString, BoxString };
+        public List<string> armyList = Enum.GetNames(typeof(Army)).ToList();
+        public List<string> teamList = Enum.GetNames(typeof(Team)).ToList();
 
         private const string DefaultArrangementString = "Default";
         private const string BlitzkriegLeftString = "Blitzkrieg-Left";

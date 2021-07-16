@@ -1,0 +1,13 @@
+.acceptButton {
+    width: 10%;
+    background-color: rgb(46, 204, 113);
+    color: rgb(0, 0, 0);
+    font-size: 20%;
+}
+
+.returnButton {
+    -unity-text-align: middle-center;
+    width: 10%;
+    background-color: rgb(192, 57, 43);
+    font-size: 20%;
+}

@@ -1,6 +1,8 @@
-﻿using Assets.Scripts.Class;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Assets.Scripts.Class;
 using Assets.Scripts.Components;
-using Assets.Scripts.Systems;
 using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
@@ -24,22 +26,25 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public readonly float startingXCoordinate = -4f;
         public readonly float startingYCoordinate = -4f;
 
-        public static string openingMode;
-
-        private EntityArchetype entityArchetype;
         private EntityManager entityManager;
-        private Label playerTimerUILabel;
-        private Label enemyTimerUILabel;
         private Entity gmEntity;
-        private GameObject gameOverUI;
+
         private BoardManager boardManager;
         private PieceManager pieceManager;
+        private readonly VisualElementsUtility visualElementsUtility = new VisualElementsUtility();
 
         public const float PlayerClockDuration = 5f;
 
         public delegate void ActivateSystem(bool enabled);
         public event ActivateSystem SetArrangementSystemStatus;
         public event ActivateSystem SetSystemStatus;
+
+        public Player player { get; set; }
+
+        public VisualElementsUtility VisualElementsUtility
+        {
+            get { return visualElementsUtility; }
+        }
 
         public static GameManager GetInstance()
         {
@@ -50,9 +55,10 @@ namespace Assets.Scripts.Monobehaviours.Managers
         {
             _instance = this;
             entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            player = new Player();
         }
 
-        private void CreatePlayer<T>(Team team)
+        private void CreatePlayer<T>(Team team, Army army)
         {
             var entityQuery = entityManager.CreateEntityQuery(typeof(T));
 
@@ -62,37 +68,44 @@ namespace Assets.Scripts.Monobehaviours.Managers
                     typeof(T)
                     ,typeof(TeamComponent)
                     ,typeof(TimeComponent)
+                    ,typeof(ArmyComponent)
                 );
                 var pEntity = entityManager.CreateEntity(playerEntityArchetype);
             }
             var playerEntity = entityQuery.GetSingletonEntity();
-            entityManager.SetComponentData<TeamComponent>(playerEntity, new TeamComponent() { myTeam = team });
-            if (!entityManager.HasComponent<TimeComponent>(playerEntity))
-                entityManager.AddComponent<TimeComponent>(playerEntity);
-            entityManager.SetComponentData<TimeComponent>(playerEntity, new TimeComponent() { TimeRemaining = PlayerClockDuration });
+            entityManager.SetComponentData(playerEntity, new TeamComponent() { myTeam = team });
+            entityManager.SetComponentData(playerEntity, new TimeComponent() { TimeRemaining = PlayerClockDuration });
+            entityManager.SetComponentData(playerEntity, new ArmyComponent() { army = army });
         }
 
         private void Start()
         {
-            gameOverUI = GameObject.Find(GameConstants.GameoverlayUIName);
             CreateGameManagerEntity();
             SetGameState(GameState.WaitingToStart);
             SetSystemsEnabled(false);
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = false;
+            SetArrangementStatus(false);
             boardManager = BoardManager.GetInstance();
             pieceManager = PieceManager.GetInstance();
         }
-        public void CreateGameWorld(FixedString32 chosenOpening, Team team)
+        public void CreateGameWorld(FixedString32 chosenOpening)
         {
-            var enemyTeam = SwapTeam(team);
-            CreatePlayer<PlayerTag>(team);
-            CreatePlayer<EnemyTag>(enemyTeam);
+            var enemyTeam = SwapTeam(player.Team);
+            CreatePlayer<PlayerTag>(player.Team, player.Army);
+            CreatePlayer<EnemyTag>(enemyTeam, RandomizeArmy());
 
             boardManager.CreateBoard();
 
             pieceManager.CreatePlayerPieces(RandomizeOpening(), enemyTeam);
-            pieceManager.CreatePlayerPieces(chosenOpening, team);
+            pieceManager.CreatePlayerPieces(chosenOpening, player.Team);
             SetArrangementStatus(true);
+        }
+
+        private static Army RandomizeArmy()
+        {
+            var armyList = Enum.GetValues(typeof(Army)).Cast<Army>().ToList();
+            var random = new Random();
+            var i = random.Next(armyList.Count);
+            return armyList[i];
         }
 
         private void SetArrangementStatus(bool enabled)
@@ -119,7 +132,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         public void SetGameState(GameState gameState, Team team = Team.Invader)
         {
-            entityManager.SetComponentData<GameManagerComponent>(gmEntity, new GameManagerComponent
+            entityManager.SetComponentData(gmEntity, new GameManagerComponent
             {
                 gameState = gameState,
                 teamToMove = team

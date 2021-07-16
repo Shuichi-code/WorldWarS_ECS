@@ -16,9 +16,9 @@ namespace Assets.Scripts.Monobehaviours.UI
 
         void Awake()
         {
-            placePieceUi = GameObject.Find("PlacingPiecesUI");
-            initializingUI = GameObject.Find("InitializingUI");
-            gameOverlayUI = GameObject.Find("GameOverlayUI");
+            placePieceUi = this.gameObject;
+            initializingUI = GameObject.Find(GameConstants.InitializingUIName);
+            gameOverlayUI = GameObject.Find(GameConstants.GameoverlayUIName);
         }
         void OnEnable()
         {

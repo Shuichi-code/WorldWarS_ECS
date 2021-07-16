@@ -2,7 +2,7 @@
 {
     public enum Army
     {
-        Allied,
+        America,
         Nazi,
         Russia
     }

@@ -20,6 +20,7 @@ namespace Assets.Scripts.Monobehaviours
         private EntityManager entityManager;
         private GameObject placePieceUi;
         private GameObject gameOverlayUi;
+        private GameObject ArmySelectUI;
         private GameManager gameManager;
         private GameObject initializingUi;
 
@@ -27,6 +28,7 @@ namespace Assets.Scripts.Monobehaviours
         {
             initializingUi = GameObject.Find(GameConstants.InitializingUIName);
             gameOverlayUi = GameObject.Find(GameConstants.GameoverlayUIName);
+            ArmySelectUI = GameObject.Find(GameConstants.ArmySelectUIName);
         }
 
         private void Start()
@@ -80,7 +82,7 @@ namespace Assets.Scripts.Monobehaviours
             //reset the pieces
             gameManager.DestroyBoardAndPieces();
             gameManager.SetSystemsEnabled(false);
-            initializingUi.SetActive(true);
+            ArmySelectUI.SetActive(true);
             gameOverlayUi.SetActive(false);
             gameOverUI.SetActive(false);
         }
