@@ -67,6 +67,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
             }
             var playerEntity = entityQuery.GetSingletonEntity();
             entityManager.SetComponentData<TeamComponent>(playerEntity, new TeamComponent() { myTeam = team });
+            if (!entityManager.HasComponent<TimeComponent>(playerEntity))
+                entityManager.AddComponent<TimeComponent>(playerEntity);
             entityManager.SetComponentData<TimeComponent>(playerEntity, new TimeComponent() { TimeRemaining = PlayerClockDuration });
         }
 
@@ -126,7 +128,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         public void DestroyBoardAndPieces()
         {
-            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(CellTag), typeof(PieceComponent)));
+            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(CellTag)));
+            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(PieceComponent)));
         }
 
         public static Team SwapTeam(Team team)

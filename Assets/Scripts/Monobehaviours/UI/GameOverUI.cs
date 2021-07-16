@@ -79,7 +79,7 @@ namespace Assets.Scripts.Monobehaviours
         {
             //reset the pieces
             gameManager.DestroyBoardAndPieces();
-
+            gameManager.SetSystemsEnabled(false);
             initializingUi.SetActive(true);
             gameOverlayUi.SetActive(false);
             gameOverUI.SetActive(false);

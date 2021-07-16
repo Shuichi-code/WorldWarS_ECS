@@ -1,7 +1,10 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Monobehaviours.Managers;
+using Assets.Scripts.Tags;
 using Unity.Entities;
+using UnityEngine;
+using Unity.Mathematics;
 
 namespace Assets.Scripts.Systems
 {
@@ -31,22 +34,22 @@ namespace Assets.Scripts.Systems
             var entityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
             var clockEntityArchetype = EntityManager.CreateArchetype(typeof(CountdownEventComponent));
 
-            Entities
-                .ForEach((Entity e, int entityInQueryIndex, ref TimeComponent timeComponent, in TeamComponent team) => {
-
-                    if (timeComponent.TimeRemaining <= 0)
+            Entities.
+                ForEach((Entity e, ref TimeComponent timeComponent, in TeamComponent team) =>
+                {
+                    if (team.myTeam != teamToMove) return;
+                    if (math.round(timeComponent.TimeRemaining) == 0f)
                     {
-                        var eventEntity = ecb.CreateEntity(entityArchetype);
-                        ecb.AddComponent(eventEntity, new GameFinishedEventComponent(){winningTeam = GameManager.SwapTeam(team.myTeam)});
+                        Debug.Log("Sending out finish event!");
+                        ArbiterCheckingSystem.DeclareWinner(ecb, entityArchetype, GameManager.SwapTeam(team.myTeam));
+                        ecb.RemoveComponent<TimeComponent>(e);
                     }
                     else
                     {
-                        if (team.myTeam != teamToMove) return;
                         timeComponent.TimeRemaining -= delta;
                         var eventEntity = ecb.CreateEntity(clockEntityArchetype);
                         ecb.AddComponent(eventEntity, new CountdownEventComponent() { winningTeam = team.myTeam, Time = timeComponent.TimeRemaining });
                     }
-
                 }).Schedule();
             Dependency.Complete();
             //ecbSystem.AddJobHandleForProducer(this.Dependency);

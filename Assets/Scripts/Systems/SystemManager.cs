@@ -7,7 +7,7 @@ namespace Assets.Scripts.Systems
     public class SystemManager : MonoBehaviour
     {
         public GameManager gameManager { get; set; }
-        void Start()
+        void OnEnable()
         {
             gameManager = GameManager.GetInstance();
             gameManager.SetArrangementSystemStatus += SetArrangementSystemStatus;

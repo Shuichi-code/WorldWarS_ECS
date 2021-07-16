@@ -97,13 +97,17 @@ namespace Assets.Scripts.Systems
                     ecb.DestroyEntity(arbiterEntity);
                 }).WithoutBurst().Run();
 
-            CheckIfGameFinishedEventRaised();
+            CheckIfGameFinishedEventRaised(ecb);
         }
 
-        private void CheckIfGameFinishedEventRaised()
+        private void CheckIfGameFinishedEventRaised(EntityCommandBuffer ecb)
         {
             Entities
-                .ForEach((in GameFinishedEventComponent eventComponent) => { OnGameWin?.Invoke(eventComponent.winningTeam); })
+                .ForEach((Entity e, in GameFinishedEventComponent eventComponent) =>
+                {
+                    OnGameWin?.Invoke(eventComponent.winningTeam);
+                    //ecb.DestroyEntity(e);
+                })
                 .WithoutBurst().Run();
             EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
         }
