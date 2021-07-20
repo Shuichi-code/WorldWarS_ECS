@@ -45,7 +45,7 @@ namespace Assets.Scripts.Systems
 
             Entities.
                 WithAll<SelectedTag>().
-                ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, ref PieceComponent piece, ref OriginalLocationComponent originalLocation) =>
+                ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, ref PieceTag piece, ref OriginalLocationComponent originalLocation) =>
                 {
 
                     pieceTranslation.Value = math.lerp(pieceTranslation.Value, worldPosNormalized, speed);

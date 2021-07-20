@@ -39,7 +39,6 @@ namespace Assets.Scripts.Systems
             var ecb = ecbSystem.CreateCommandBuffer();
             var eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
 
-            var pieceComponentArray = GetComponentDataFromEntity<PieceComponent>();
             var teamComponentArray = GetComponentDataFromEntity<TeamComponent>();
             var rankComponentArray = GetComponentDataFromEntity<RankComponent>();
             var flagPassedQuery = GetEntityQuery(ComponentType.ReadOnly<FlagPassingTag>());
@@ -56,8 +55,7 @@ namespace Assets.Scripts.Systems
                     var winningPieceEntity = Entity.Null;
                     if (IsThereAFight(arbiter))
                     {
-                        Debug.Log("There is a fight");
-                        int defendingRank = pieceComponentArray[arbiter.defendingPieceEntity].pieceRank;
+                        int defendingRank = rankComponentArray[arbiter.defendingPieceEntity].Rank;
                         fightResult = FightCalculator.DetermineFightResult(attackingRank, defendingRank);
 
                         switch (fightResult)
@@ -97,7 +95,10 @@ namespace Assets.Scripts.Systems
                         if (!HasComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity))
                             ecb.AddComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity);
 
-                        ecb.SetComponent(arbiter.battlegroundCellEntity, new PieceOnCellComponent { PieceEntity = winningPieceEntity == Entity.Null ? arbiter.attackingPieceEntity : winningPieceEntity });
+                        ecb.SetComponent(arbiter.battlegroundCellEntity, new PieceOnCellComponent
+                        {
+                            PieceEntity = winningPieceEntity == Entity.Null ? arbiter.attackingPieceEntity : winningPieceEntity
+                        });
                         if (attackingRank == Piece.Flag)
                             CheckIfFlagIsOnLastCell(arbiter, attackingTeam, ecb);
                     }

@@ -92,7 +92,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
             boardManager.CreateBoard();
 
-            pieceManager.CreatePlayerPieces(enemyOpening, enemyTeam, enemyArmy);
+            pieceManager.CreatePlayerPieces(enemyOpening, enemyTeam, enemyArmy, false);
             pieceManager.CreatePlayerPieces(chosenOpening, player.Team, player.Army);
             SetArrangementStatus(true);
         }
@@ -139,7 +139,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public void DestroyBoardAndPieces()
         {
             entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(CellTag)));
-            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(PieceComponent)));
+            entityManager.DestroyEntity(entityManager.CreateEntityQuery(typeof(PieceTag)));
         }
 
         public static Team SwapTeam(Team team)

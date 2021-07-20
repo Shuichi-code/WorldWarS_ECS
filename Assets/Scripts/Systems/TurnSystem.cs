@@ -24,13 +24,14 @@ namespace Assets.Scripts.Systems
             var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
             var teamToMove = gm.teamToMove;
 
-            Entities
-                .ForEach((Entity e, int entityInQueryIndex, in PieceComponent piece) =>
+            Entities.
+                WithAll<PieceTag>()
+                .ForEach((Entity e, int entityInQueryIndex, in TeamComponent teamComponent) =>
                 {
-                    if (piece.team == teamToMove && !HasComponent<PlayableTag>(e))
+                    if (teamComponent.myTeam == teamToMove && !HasComponent<PlayableTag>(e))
                         Tag.TagAsPlayable(ecb, entityInQueryIndex, e);
 
-                    else if (piece.team != teamToMove && HasComponent<PlayableTag>(e))
+                    else if (teamComponent.myTeam != teamToMove && HasComponent<PlayableTag>(e))
                         Tag.RemovePlayableTag(ecb, entityInQueryIndex, e);
 
                 }).ScheduleParallel();

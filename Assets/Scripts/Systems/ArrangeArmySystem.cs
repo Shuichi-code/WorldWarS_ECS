@@ -31,7 +31,7 @@ namespace Assets.Scripts.Systems
             var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
             var highlightedCellQuery = GetEntityQuery(ComponentType.ReadOnly<CellTag>(), ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<Translation>());
-            var highlightedPieceQuery = GetEntityQuery(ComponentType.ReadOnly<PieceComponent>(), ComponentType.ReadOnly<HighlightedTag>(), typeof(Translation));
+            var highlightedPieceQuery = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<HighlightedTag>(), typeof(Translation));
 
             HighlightClickedEntities(roundedWorldPos, mouseButtonPressed, ecb);
 
@@ -86,10 +86,10 @@ namespace Assets.Scripts.Systems
         private void HighlightClickedEntities(float3 roundedWorldPos, bool mouseButtonPressed, EntityCommandBuffer.ParallelWriter ecb)
         {
             var playerTeam = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<TeamComponent>()).GetSingleton<TeamComponent>().myTeam;
-            Entities.WithAny<CellTag, PieceComponent, HomeCellComponent>().ForEach(
+            Entities.WithAny<CellTag, PieceTag, HomeCellComponent>().ForEach(
                 (Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
                 {
-                    var pieceTeam = HasComponent<PieceComponent>(cellEntity) ? GetComponent<TeamComponent>(cellEntity).myTeam : Team.Null;
+                    var pieceTeam = HasComponent<PieceTag>(cellEntity) ? GetComponent<TeamComponent>(cellEntity).myTeam : Team.Null;
                     var cellTeam = HasComponent<HomeCellComponent>(cellEntity)
                         ? GetComponent<HomeCellComponent>(cellEntity).homeTeam
                         : Team.Null;
@@ -106,7 +106,7 @@ namespace Assets.Scripts.Systems
 
         private void SwapPieces(Translation firstEntityTranslation, Translation secondEntityTranslation, EntityCommandBuffer.ParallelWriter ecb)
         {
-            Entities.WithAll<PieceComponent, HighlightedTag>().ForEach(
+            Entities.WithAll<PieceTag, HighlightedTag>().ForEach(
                 (Entity pieceEntity, int entityInQueryIndex, ref Translation pieceTranslation) =>
                 {
                     var newPieceLocation = GetNewPieceLocation(firstEntityTranslation, secondEntityTranslation, pieceTranslation);

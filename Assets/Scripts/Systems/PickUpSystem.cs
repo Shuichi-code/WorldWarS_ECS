@@ -30,8 +30,8 @@ namespace Assets.Scripts.Systems
             #endregion
 
             Entities
-                .WithAll<PieceComponent, PlayableTag>()
-                .ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, in PieceComponent piece) =>
+                .WithAll<PieceTag, PlayableTag>()
+                .ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, in PieceTag piece) =>
                 {
 
                     float3 pieceRoundedLocation = math.round(pieceTranslation.Value);

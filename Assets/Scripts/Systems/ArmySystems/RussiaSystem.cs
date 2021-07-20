@@ -31,7 +31,7 @@ namespace Assets.Scripts.Systems.ArmySystems
             {
                 if (armyArray[i].army != Army.Russia) continue;
                 var team = teamArray[i].myTeam;
-                var spyQuery = GetEntityQuery(ComponentType.ReadOnly<PieceComponent>());
+                var spyQuery = GetEntityQuery(ComponentType.ReadOnly<PieceTag>());
             }
             //get the team
 

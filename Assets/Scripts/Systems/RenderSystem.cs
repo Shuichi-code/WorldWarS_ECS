@@ -22,10 +22,11 @@ namespace Assets.Scripts.Systems
             EntityCommandBuffer entityCommandBuffer = entityCommandBufferSystem.CreateCommandBuffer();
             //code for rendering pieces
             Entities.
+                WithAll<PieceTag>().
                 WithoutBurst().
-                ForEach((in PieceComponent pieceComponent, in Translation translation) =>
+                ForEach((in RankComponent rankComponent, in Translation translation) =>
                 {
-                    var pieceMaterial = Resources.Load(new Dictionaries().mPieceRank[pieceComponent.pieceRank],
+                    var pieceMaterial = Resources.Load(new Dictionaries().mPieceRank[rankComponent.Rank],
                         typeof(Material)) as Material;
                     Render(translation, pieceMaterial);
                 }).Run();
