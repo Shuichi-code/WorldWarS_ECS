@@ -52,6 +52,5 @@ public class ArmySelectUI : MonoBehaviour
         gameManager.player.Team = (Team)Enum.Parse(typeof(Team), chosenTeam);
         initializingUI.SetActive(true);
         this.gameObject.SetActive(false);
-        //Debug.Log("Clicked on accept button.");
     }
 }

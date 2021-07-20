@@ -90,13 +90,16 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public void CreateGameWorld(FixedString32 chosenOpening)
         {
             var enemyTeam = SwapTeam(player.Team);
+            var enemyArmy = RandomizeArmy();
+            var enemyOpening = RandomizeOpening();
+
             CreatePlayer<PlayerTag>(player.Team, player.Army);
-            CreatePlayer<EnemyTag>(enemyTeam, RandomizeArmy());
+            CreatePlayer<EnemyTag>(enemyTeam, enemyArmy);
 
             boardManager.CreateBoard();
 
-            pieceManager.CreatePlayerPieces(RandomizeOpening(), enemyTeam);
-            pieceManager.CreatePlayerPieces(chosenOpening, player.Team);
+            pieceManager.CreatePlayerPieces(enemyOpening, enemyTeam, enemyArmy);
+            pieceManager.CreatePlayerPieces(chosenOpening, player.Team, player.Army);
             SetArrangementStatus(true);
         }
 

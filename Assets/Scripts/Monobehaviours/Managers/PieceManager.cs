@@ -41,7 +41,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
             _gameManager = GameManager.GetInstance();
         }
 
-        public void CreatePlayerPieces(FixedString32 chosenOpening, Team team)
+        public void CreatePlayerPieces(FixedString32 chosenOpening, Team team, Army army)
         {
             CreatePlayerPieceEntities();
 
@@ -71,6 +71,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
                             team = team
                         }
                     );
+
+                    entityManager.SetComponentData(pieceEntity, new ArmyComponent() {army = army});
+
                     BoardManager.GetInstance().SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray);
                     pieceEntityIndex++;
                 }
@@ -94,7 +97,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
         {
             entityArchetype = entityManager.CreateArchetype(
                 typeof(Translation),
-                typeof(PieceComponent)
+                typeof(PieceComponent),
+                typeof(ArmyComponent)
             );
 
             pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
