@@ -30,9 +30,11 @@ namespace Assets.Scripts.Systems
             #region Initializing Data
 
             var ecb = ecbSystem.CreateCommandBuffer();
-            EntityArchetype eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
+            var eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
 
-            ComponentDataFromEntity<PieceComponent> pieceComponentArray = GetComponentDataFromEntity<PieceComponent>();
+            var pieceComponentArray = GetComponentDataFromEntity<PieceComponent>();
+            var teamComponentArray = GetComponentDataFromEntity<TeamComponent>();
+            var rankComponentArray = GetComponentDataFromEntity<RankComponent>();
             var flagPassedQuery = GetEntityQuery(ComponentType.ReadOnly<FlagPassingTag>());
 
             #endregion Initializing Data
@@ -42,11 +44,12 @@ namespace Assets.Scripts.Systems
                 .ForEach((Entity arbiterEntity, in ArbiterComponent arbiter) =>
                 {
                     FightResult fightResult = FightResult.NoFight;
-                    int attackingRank = pieceComponentArray[arbiter.attackingPieceEntity].pieceRank;
-                    Team attackingTeam = pieceComponentArray[arbiter.attackingPieceEntity].team;
+                    int attackingRank = rankComponentArray[arbiter.attackingPieceEntity].Rank;
+                    Team attackingTeam = teamComponentArray[arbiter.attackingPieceEntity].myTeam;
 
                     if (IsThereAFight(arbiter))
                     {
+                        Debug.Log("There is a fight");
                         int defendingRank = pieceComponentArray[arbiter.defendingPieceEntity].pieceRank;
                         fightResult = FightCalculator.DetermineFightResult(attackingRank, defendingRank);
 
@@ -88,6 +91,8 @@ namespace Assets.Scripts.Systems
                         if (attackingRank == Piece.Flag)
                             CheckIfFlagIsOnLastCell(arbiter, attackingTeam, ecb);
                     }
+
+
 
                     if (HasFlagAlreadyPassedLastCell(flagPassedQuery))
                         DeclareWinner(ecb, eventEntityArchetype, GameManager.SwapTeam(attackingTeam));

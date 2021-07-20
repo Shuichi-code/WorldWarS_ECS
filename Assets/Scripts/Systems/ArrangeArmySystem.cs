@@ -89,7 +89,7 @@ namespace Assets.Scripts.Systems
             Entities.WithAny<CellTag, PieceComponent, HomeCellComponent>().ForEach(
                 (Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
                 {
-                    var pieceTeam = HasComponent<PieceComponent>(cellEntity) ? GetComponent<PieceComponent>(cellEntity).team : Team.Null;
+                    var pieceTeam = HasComponent<PieceComponent>(cellEntity) ? GetComponent<TeamComponent>(cellEntity).myTeam : Team.Null;
                     var cellTeam = HasComponent<HomeCellComponent>(cellEntity)
                         ? GetComponent<HomeCellComponent>(cellEntity).homeTeam
                         : Team.Null;
@@ -111,17 +111,9 @@ namespace Assets.Scripts.Systems
                 {
                     var newPieceLocation = GetNewPieceLocation(firstEntityTranslation, secondEntityTranslation, pieceTranslation);
 
-                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new Translation
-                    {
-                        Value = newPieceLocation
-                    });
-                    var pieceComponent = GetComponent<PieceComponent>(pieceEntity);
-                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new PieceComponent
-                    {
-                        originalCellPosition = newPieceLocation,
-                        pieceRank = pieceComponent.pieceRank,
-                        team = pieceComponent.team
-                    });
+                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new Translation {Value = newPieceLocation});
+                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new OriginalLocationComponent{ originalLocation = newPieceLocation});
+
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);
         }

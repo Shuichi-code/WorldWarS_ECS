@@ -23,12 +23,12 @@ public class HighlightCellSystem : SystemBase
     protected override void OnUpdate()
     {
         var mouseButtonUp = Input.GetMouseButtonUp(0);
-        var pieceQuery = GetEntityQuery(ComponentType.ReadOnly<SelectedTag>(), ComponentType.ReadOnly<PieceComponent>());
+        var pieceQuery = GetEntityQuery(ComponentType.ReadOnly<SelectedTag>(), ComponentType.ReadOnly<OriginalLocationComponent>(),ComponentType.ReadOnly<TeamComponent>());
         if (pieceQuery.CalculateEntityCount() == 0)
             return;
 
-        float3 selectedPieceTranslation = pieceQuery.GetSingleton<PieceComponent>().originalCellPosition;
-        Team selectedPieceTeam = pieceQuery.GetSingleton<PieceComponent>().team;
+        float3 selectedPieceTranslation = pieceQuery.GetSingleton<OriginalLocationComponent>().originalLocation;
+        Team selectedPieceTeam = pieceQuery.GetSingleton<TeamComponent>().myTeam;
 
         var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
 
@@ -47,7 +47,7 @@ public class HighlightCellSystem : SystemBase
                             Tag.TagCellAsHighlighted(ecb, entityInQueryIndex, e);
                         else
                         {
-                            Team cellPieceTeam = GetComponent<PieceComponent>(GetComponent<PieceOnCellComponent>(e).PieceEntity).team;
+                            var cellPieceTeam = GetComponent<TeamComponent>(GetComponent<PieceOnCellComponent>(e).PieceEntity).myTeam;
                             if (selectedPieceTeam != cellPieceTeam)
                                 Tag.TagCellAsEnemy(ecb, entityInQueryIndex, e);
                         }
@@ -56,7 +56,6 @@ public class HighlightCellSystem : SystemBase
                 }
                 cellArrayPositions.Dispose();
             }).ScheduleParallel();
-        //this.CompleteDependency();
         ecbSystem.AddJobHandleForProducer(this.Dependency);
     }
 

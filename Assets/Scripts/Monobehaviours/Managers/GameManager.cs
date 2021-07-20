@@ -31,20 +31,14 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         private BoardManager boardManager;
         private PieceManager pieceManager;
-        private readonly VisualElementsUtility visualElementsUtility = new VisualElementsUtility();
 
-        public const float PlayerClockDuration = 5f;
+        public const float PlayerClockDuration = float.MaxValue;
 
         public delegate void ActivateSystem(bool enabled);
         public event ActivateSystem SetArrangementSystemStatus;
         public event ActivateSystem SetSystemStatus;
 
         public Player player { get; set; }
-
-        public VisualElementsUtility VisualElementsUtility
-        {
-            get { return visualElementsUtility; }
-        }
 
         public static GameManager GetInstance()
         {

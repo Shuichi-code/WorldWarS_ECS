@@ -45,7 +45,7 @@ namespace Assets.Scripts.Systems
 
             Entities.
                 WithAll<SelectedTag>().
-                ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, ref PieceComponent piece) =>
+                ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, ref PieceComponent piece, ref OriginalLocationComponent originalLocation) =>
                 {
 
                     pieceTranslation.Value = math.lerp(pieceTranslation.Value, worldPosNormalized, speed);
@@ -53,7 +53,7 @@ namespace Assets.Scripts.Systems
                     //this is the code for when the user has dropped the piece
                     if (mouseButtonHeld) return;
 
-                    Entity originalCellEntity = Location.GetMatchedEntity(cellEntities, cellTranslation, piece.originalCellPosition);
+                    Entity originalCellEntity = Location.GetMatchedEntity(cellEntities, cellTranslation, originalLocation.originalLocation);
                     Entity newCellEntity = Location.GetMatchedEntity(cellEntities, cellTranslation, math.round(pieceTranslation.Value));
                     Entity enemyCell = Location.GetMatchedEntity(enemyCellEntities, enemyCellTranslation, math.round(pieceTranslation.Value));
                     Entity enemyPieceEntity = GetEnemyPiece(pieceOnCellComponentArray, enemyCell);
@@ -67,10 +67,10 @@ namespace Assets.Scripts.Systems
                         }
 
                         pieceTranslation.Value = math.round(pieceTranslation.Value);
-                        piece.originalCellPosition = pieceTranslation.Value;
+                        originalLocation.originalLocation = pieceTranslation.Value;
                     }
                     else
-                        pieceTranslation.Value = piece.originalCellPosition;
+                        pieceTranslation.Value = originalLocation.originalLocation;
 
                     ecb.RemoveComponent<SelectedTag>(e);
                 }).Schedule();

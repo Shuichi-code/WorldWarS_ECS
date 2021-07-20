@@ -71,7 +71,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
                             team = team
                         }
                     );
-
+                    entityManager.SetComponentData(pieceEntity, new TeamComponent(){ myTeam = team});
+                    entityManager.SetComponentData(pieceEntity, new RankComponent() { Rank = pieceRank });
+                    entityManager.SetComponentData(pieceEntity, new OriginalLocationComponent() { originalLocation = pieceLocation });
                     entityManager.SetComponentData(pieceEntity, new ArmyComponent() {army = army});
 
                     BoardManager.GetInstance().SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray);
@@ -98,7 +100,10 @@ namespace Assets.Scripts.Monobehaviours.Managers
             entityArchetype = entityManager.CreateArchetype(
                 typeof(Translation),
                 typeof(PieceComponent),
-                typeof(ArmyComponent)
+                typeof(ArmyComponent),
+                typeof(TeamComponent),
+                typeof(RankComponent),
+                typeof(OriginalLocationComponent)
             );
 
             pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
