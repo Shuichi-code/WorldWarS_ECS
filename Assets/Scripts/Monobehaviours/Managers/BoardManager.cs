@@ -73,7 +73,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private void TagHomeCells(int columns)
         {
             var playerTeam = GameManager.GetInstance().player.Team;
-            var homeTeam = columns < 3 ? playerTeam : columns > 6 ? GameManager.SwapTeam(playerTeam) : Team.Null;
+            var homeTeam = columns < 3 ? playerTeam : columns > 4 ? GameManager.SwapTeam(playerTeam) : Team.Null;
             if (homeTeam == Team.Null) return;
             entityManager.AddComponent(boardArray[boardIndex], typeof(HomeCellComponent));
             entityManager.SetComponentData(boardArray[boardIndex], new HomeCellComponent
@@ -88,14 +88,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
         /// <param name="columns"></param>
         public void TagEdgeCells(int columns)
         {
-            switch (columns)
+            if (columns == MaxColumnCells - MaxColumnCells || columns == MaxColumnCells - 1)
             {
-                case MaxColumnCells - MaxColumnCells:
-                    entityManager.AddComponent(boardArray[boardIndex], typeof(LastCellsForDefenderTag));
-                    break;
-                case MaxColumnCells - 1:
-                    entityManager.AddComponent(boardArray[boardIndex], typeof(LastCellsForInvaderTag));
-                    break;
+                entityManager.AddComponent(boardArray[boardIndex], typeof(LastCellsTag));
             }
         }
 

@@ -11,6 +11,7 @@ namespace Assets.Scripts.Systems
     public class ArbiterCheckingSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
+        private GameManager gameManager;
 
         public delegate void GameWinnerDelegate(Team winningTeam);
 
@@ -22,6 +23,12 @@ namespace Assets.Scripts.Systems
             base.OnCreate();
             ecbSystem = World
                 .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+            gameManager = GameManager.GetInstance();
+        }
+
+        void Awake()
+        {
+
         }
 
         protected override void OnUpdate()
@@ -46,7 +53,7 @@ namespace Assets.Scripts.Systems
                     FightResult fightResult = FightResult.NoFight;
                     int attackingRank = rankComponentArray[arbiter.attackingPieceEntity].Rank;
                     Team attackingTeam = teamComponentArray[arbiter.attackingPieceEntity].myTeam;
-
+                    var winningPieceEntity = Entity.Null;
                     if (IsThereAFight(arbiter))
                     {
                         Debug.Log("There is a fight");
@@ -57,10 +64,12 @@ namespace Assets.Scripts.Systems
                         {
                             case FightResult.AttackerWins:
                                 ecb.AddComponent<CapturedComponent>(arbiter.defendingPieceEntity);
+                                winningPieceEntity = arbiter.attackingPieceEntity;
                                 break;
 
                             case FightResult.DefenderWins:
                                 ecb.AddComponent<CapturedComponent>(arbiter.attackingPieceEntity);
+                                winningPieceEntity = arbiter.defendingPieceEntity;
                                 break;
 
                             case FightResult.BothLose:
@@ -87,12 +96,11 @@ namespace Assets.Scripts.Systems
                     {
                         if (!HasComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity))
                             ecb.AddComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity);
-                        ecb.SetComponent(arbiter.battlegroundCellEntity, new PieceOnCellComponent { PieceEntity = arbiter.attackingPieceEntity });
+
+                        ecb.SetComponent(arbiter.battlegroundCellEntity, new PieceOnCellComponent { PieceEntity = winningPieceEntity == Entity.Null ? arbiter.attackingPieceEntity : winningPieceEntity });
                         if (attackingRank == Piece.Flag)
                             CheckIfFlagIsOnLastCell(arbiter, attackingTeam, ecb);
                     }
-
-
 
                     if (HasFlagAlreadyPassedLastCell(flagPassedQuery))
                         DeclareWinner(ecb, eventEntityArchetype, GameManager.SwapTeam(attackingTeam));
@@ -129,18 +137,17 @@ namespace Assets.Scripts.Systems
 
         private void CheckIfFlagIsOnLastCell(ArbiterComponent arbiter, Team attackingTeam, EntityCommandBuffer ecb)
         {
-            if (IsPieceOnLastCell(arbiter, attackingTeam))
+            if (!HasComponent<LastCellsTag>(arbiter.battlegroundCellEntity)) return;
+            var cellTeamArray = GetComponentDataFromEntity<HomeCellComponent>();
+            var cellTeam = cellTeamArray[arbiter.battlegroundCellEntity].homeTeam;
+            if (attackingTeam == GameManager.SwapTeam(cellTeam))
                 ecb.AddComponent<FlagPassingTag>(arbiter.attackingPieceEntity);
+
         }
 
         private static bool IsThereAFight(ArbiterComponent arbiter)
         {
             return arbiter.defendingPieceEntity != Entity.Null;
-        }
-
-        private bool IsPieceOnLastCell(ArbiterComponent arbiter, Team attackingTeam)
-        {
-            return (attackingTeam == Team.Defender && HasComponent<LastCellsForDefenderTag>(arbiter.battlegroundCellEntity)) || (attackingTeam == Team.Invader && HasComponent<LastCellsForInvaderTag>(arbiter.battlegroundCellEntity));
         }
 
         public static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype, Team winningTeam)
