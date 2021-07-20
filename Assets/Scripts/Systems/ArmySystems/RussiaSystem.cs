@@ -1,6 +1,10 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+<<<<<<< Updated upstream
 using Unity.Burst;
+=======
+using Assets.Scripts.Tags;
+>>>>>>> Stashed changes
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -21,6 +25,7 @@ public class RussiaSystem : SystemBase
     {
         var ecb = ecbSystem.CreateCommandBuffer();
 
+<<<<<<< Updated upstream
         var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>(),
             ComponentType.ReadOnly<ArmyComponent>());
         if (entities.CalculateEntityCount() == 0) return;
@@ -35,8 +40,44 @@ public class RussiaSystem : SystemBase
             var spyQuery = GetEntityQuery(ComponentType.ReadOnly<PieceComponent>());
         }
         //get the team
+=======
+            var capturedEntityQuery = GetCapturedEntities();
+            if (capturedEntityQuery.CalculateEntityCount() == 0) return;
+            var armyArray = capturedEntityQuery.ToComponentDataArray<ArmyComponent>(Allocator.Temp);
+            var teamArray = capturedEntityQuery.ToComponentDataArray<TeamComponent>(Allocator.Temp);
+
+            //check if russian army
+            for (var i = 0; i < armyArray.Length; i++)
+            {
+                if (armyArray[i].army != Army.Russia) continue;
+                var capturedTeam = teamArray[i].myTeam;
+                Entities.
+                    WithAny<PlayerTag,EnemyTag>().
+                    ForEach((Entity e, int entityInQueryIndex, in TeamComponent teamComponent, in ArmyComponent armyComponent) =>
+                {
+                    if (teamComponent.myTeam == capturedTeam && armyComponent.army == Army.Russia)
+                    {
+                        //Add special ability
+                        ecb.AddComponent(e, typeof(SpecialAbilityComponent));
+                    }
+                }).ScheduleParallel();
+
+            }
+            //get the team
+>>>>>>> Stashed changes
 
         //execute job on the team's spy
 
+<<<<<<< Updated upstream
+=======
+        }
+
+        private EntityQuery GetCapturedEntities()
+        {
+            return GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>(),
+                ComponentType.ReadOnly<ArmyComponent>(),
+                ComponentType.ReadOnly<TeamComponent>());
+        }
+>>>>>>> Stashed changes
     }
 }

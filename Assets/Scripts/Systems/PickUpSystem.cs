@@ -1,5 +1,6 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+using Assets.Scripts.Tags;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;

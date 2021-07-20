@@ -1,5 +1,6 @@
 using Assets.Scripts.Components;
 using Assets.Scripts.Class;
+using Assets.Scripts.Tags;
 using Unity.Entities;
 
 namespace Assets.Scripts.Systems
@@ -17,8 +18,8 @@ namespace Assets.Scripts.Systems
         protected override void OnUpdate()
         {
             #region CheckGameState
-            EntityQuery gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
-            GameManagerComponent gm = gmQuery.GetSingleton<GameManagerComponent>();
+            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
+            var gm = gmQuery.GetSingleton<GameManagerComponent>();
 
             #endregion
             var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
