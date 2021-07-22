@@ -18,6 +18,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public Material cellImage;
         public Material enemyCellImage;
         public Material highlightedImage;
+        public Material highlightedPiece;
 
         public Mesh quadMesh;
 
@@ -84,7 +85,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public void CreateGameWorld(FixedString32 chosenOpening)
         {
             var enemyTeam = SwapTeam(player.Team);
-            var enemyArmy = RandomizeArmy();
+            var enemyArmy = Army.Russia;//RandomizeArmy();
             var enemyOpening = RandomizeOpening();
 
             CreatePlayer<PlayerTag>(player.Team, player.Army);

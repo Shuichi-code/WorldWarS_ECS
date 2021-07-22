@@ -155,6 +155,7 @@ MonoBehaviour:
   cellImage: {fileID: 2100000, guid: 6d2792b4f2a279b4e86dc7434966963b, type: 2}
   enemyCellImage: {fileID: 2100000, guid: e7e2add9157e04347b7fed1a29bd5da2, type: 2}
   highlightedImage: {fileID: 2100000, guid: 6d1840f13deafe049a799df39230f543, type: 2}
+  highlightedPiece: {fileID: 2100000, guid: 69e09f46b5154814eaae7924f54223ad, type: 2}
   quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!4 &85616575
 Transform:

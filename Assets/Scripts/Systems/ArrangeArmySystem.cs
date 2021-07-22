@@ -85,7 +85,9 @@ namespace Assets.Scripts.Systems
 
         private void HighlightClickedEntities(float3 roundedWorldPos, bool mouseButtonPressed, EntityCommandBuffer.ParallelWriter ecb)
         {
-            var playerTeam = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<TeamComponent>()).GetSingleton<TeamComponent>().myTeam;
+            var playerTeam = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
+                ComponentType.ReadOnly<TeamComponent>(),
+                ComponentType.ReadOnly<TimeComponent>()).GetSingleton<TeamComponent>().myTeam;
             Entities.WithAny<CellTag, PieceTag, HomeCellComponent>().ForEach(
                 (Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
                 {

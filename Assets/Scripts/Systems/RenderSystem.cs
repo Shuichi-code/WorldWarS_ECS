@@ -12,14 +12,16 @@ namespace Assets.Scripts.Systems
     public class RenderSystem : SystemBase
     {
         private EntityCommandBufferSystem entityCommandBufferSystem;
+        private static GameManager gameManager;
+
         protected override void OnStartRunning()
         {
             base.OnStartRunning();
             entityCommandBufferSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+            gameManager = GameManager.GetInstance();
         }
         protected override void OnUpdate()
         {
-            EntityCommandBuffer entityCommandBuffer = entityCommandBufferSystem.CreateCommandBuffer();
             //code for rendering pieces
             Entities.
                 WithAll<PieceTag>().
@@ -31,7 +33,7 @@ namespace Assets.Scripts.Systems
                     Render(translation, pieceMaterial);
                 }).Run();
             //code for rendering normal cells
-            var cellImage = GameManager.GetInstance().cellImage;
+            var cellImage = gameManager.cellImage;
             Entities.
                 WithoutBurst().
                 ForEach((in CellTag cellComponent, in Translation translation) =>
@@ -39,7 +41,7 @@ namespace Assets.Scripts.Systems
                     Render(translation, cellImage);
                 }).Run();
 
-            var highlightedImage = GameManager.GetInstance().highlightedImage;
+            var highlightedImage = gameManager.highlightedImage;
             //code for rendering highlighted cells
             Entities.
                 WithoutBurst().
@@ -48,7 +50,7 @@ namespace Assets.Scripts.Systems
                     Render(translation, highlightedImage);
                 }).Run();
 
-            var enemyCellImage = GameManager.GetInstance().enemyCellImage;
+            var enemyCellImage = gameManager.enemyCellImage;
             //code for rendering enemy cells
             Entities.
                 WithoutBurst().
@@ -57,11 +59,19 @@ namespace Assets.Scripts.Systems
                 {
                     Render(translation, enemyCellImage);
                 }).Run();
+            var highlightedPieceImage = gameManager.highlightedPiece;
+            Entities.
+                WithoutBurst().
+                WithAll<BulletComponent>().
+                ForEach((in Translation translation) =>
+                {
+                    Render(translation, highlightedPieceImage);
+                }).Run();
         }
 
         private static void Render(Translation translation, Material material)
         {
-            Mesh quadMesh = GameManager.GetInstance().quadMesh;
+            Mesh quadMesh = gameManager.quadMesh;
             Graphics.DrawMesh(
                 quadMesh,
                 translation.Value,

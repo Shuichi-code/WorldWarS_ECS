@@ -1,3 +1,4 @@
+using System.Data;
 using Unity.Entities;
 
 namespace Assets.Scripts.Class

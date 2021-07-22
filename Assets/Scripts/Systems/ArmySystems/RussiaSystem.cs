@@ -10,6 +10,7 @@ namespace Assets.Scripts.Systems.ArmySystems
     public class RussiaSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
+
         protected override void OnCreate()
         {
             // Find the ECB system once and store it for later usage
@@ -23,18 +24,20 @@ namespace Assets.Scripts.Systems.ArmySystems
 
             var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
             if (entities.CalculateEntityCount() == 0) return;
-            var playerEntity = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
-            var enemyEntity = GetEntityQuery(ComponentType.ReadOnly<EnemyTag>(), ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
+            var playerEntity = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
+                ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
+            var enemyEntity = GetEntityQuery(ComponentType.ReadOnly<EnemyTag>(),
+                ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
             //attach special ability to the player
             Entities.
-                WithAny<CapturedComponent>().
-                ForEach((Entity e, ArmyComponent armyComponent) =>
+                WithAll<CapturedComponent>().
+                WithAny<PlayerTag, EnemyTag>().
+                ForEach((Entity e, in ArmyComponent armyComponent) =>
                 {
                     if (armyComponent.army != Army.Russia) return;
-                    var playerEntityToBeTagged = HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity;
-                    ecb.AddComponent(playerEntityToBeTagged, new SpecialAbilityComponent());
-                }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
+                    ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity, new SpecialAbilityComponent());
+                }).Schedule();
+            Dependency.Complete();
         }
     }
 }
