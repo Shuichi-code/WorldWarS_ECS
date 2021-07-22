@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -19,24 +21,20 @@ namespace Assets.Scripts.Systems.ArmySystems
         {
             var ecb = ecbSystem.CreateCommandBuffer();
 
-            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>(),
-                ComponentType.ReadOnly<ArmyComponent>(),
-                ComponentType.ReadOnly<TeamComponent>());
+            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
             if (entities.CalculateEntityCount() == 0) return;
-            var armyArray = entities.ToComponentDataArray<ArmyComponent>(Allocator.Temp);
-            var teamArray = entities.ToComponentDataArray<TeamComponent>(Allocator.Temp);
-
-            //check if russian army
-            for (int i = 0; i < armyArray.Length; i++)
-            {
-                if (armyArray[i].army != Army.Russia) continue;
-                var team = teamArray[i].myTeam;
-                var spyQuery = GetEntityQuery(ComponentType.ReadOnly<PieceTag>());
-            }
-            //get the team
-
-            //execute job on the team's spy
-
+            var playerEntity = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
+            var enemyEntity = GetEntityQuery(ComponentType.ReadOnly<EnemyTag>(), ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
+            //attach special ability to the player
+            Entities.
+                WithAny<CapturedComponent>().
+                ForEach((Entity e, ArmyComponent armyComponent) =>
+                {
+                    if (armyComponent.army != Army.Russia) return;
+                    var playerEntityToBeTagged = HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity;
+                    ecb.AddComponent(playerEntityToBeTagged, new SpecialAbilityComponent());
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

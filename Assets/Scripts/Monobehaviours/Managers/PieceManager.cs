@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -43,7 +44,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         public void CreatePlayerPieces(FixedString32 chosenOpening, Team team, Army army, bool isPlayer = true)
         {
-            CreatePlayerPieceEntities();
+            CreatePlayerPieceEntities(isPlayer);
 
             //get arrangement based on chosenOpening
             int[,] chosenOpenArray = new Dictionaries().mOpenings[chosenOpening.ToString()];
@@ -87,7 +88,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         }
 
-        private void CreatePlayerPieceEntities()
+        private void CreatePlayerPieceEntities(bool isPlayer)
         {
             entityArchetype = entityManager.CreateArchetype(
                 typeof(Translation),
@@ -95,7 +96,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
                 typeof(ArmyComponent),
                 typeof(TeamComponent),
                 typeof(RankComponent),
-                typeof(OriginalLocationComponent)
+                typeof(OriginalLocationComponent),
+                isPlayer ? typeof(PlayerTag) : typeof(EnemyTag)
             );
 
             pieceArray = new NativeArray<Entity>(21, Allocator.Temp);
