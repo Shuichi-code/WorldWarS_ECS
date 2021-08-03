@@ -24,15 +24,22 @@ namespace Assets.Scripts.Systems.ArmySystems
 
             var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
             if (entities.CalculateEntityCount() == 0) return;
-            var playerEntity = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
-                ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
-            var enemyEntity = GetEntityQuery(ComponentType.ReadOnly<EnemyTag>(),
-                ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
+            var playerEntity = GetPlayerEntity<PlayerTag>();
+            var enemyEntity = GetPlayerEntity<EnemyTag>();
             //attach special ability to the player
-            Entities.
-                WithAll<CapturedComponent>().
-                WithAny<PlayerTag, EnemyTag>().
-                ForEach((Entity e, in ArmyComponent armyComponent) =>
+            TagPlayerWithSpecialAbility(ecb, playerEntity, enemyEntity);
+        }
+
+        private Entity GetPlayerEntity<T>()
+        {
+            return GetEntityQuery(ComponentType.ReadOnly<T>(),
+                ComponentType.ReadOnly<TimeComponent>()).GetSingletonEntity();
+        }
+
+        private void TagPlayerWithSpecialAbility(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
+        {
+            Entities.WithAll<CapturedComponent>().WithAny<PlayerTag, EnemyTag>().ForEach(
+                (Entity e, in ArmyComponent armyComponent) =>
                 {
                     if (armyComponent.army != Army.Russia) return;
                     ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity, new SpecialAbilityComponent());

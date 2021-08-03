@@ -2,6 +2,7 @@
 {
     public class GameConstants
     {
+        public static string ChargedAbilityUIName => "ChargedAbilityUI";
 
 
         #region UI
@@ -24,6 +25,8 @@
         #region Buttons
         public static string AcceptBtnName => "acceptBtn";
         public static string ReturnBtnName => "returnBtn";
+        public static string ChargedAbilityBtnName => "chargedAbilityBtn";
+
         #endregion
 
     }

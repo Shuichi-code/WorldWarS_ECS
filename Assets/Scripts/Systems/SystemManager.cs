@@ -10,13 +10,18 @@ namespace Assets.Scripts.Systems
         void OnEnable()
         {
             gameManager = GameManager.GetInstance();
-            gameManager.SetArrangementSystemStatus += SetArrangementSystemStatus;
+            gameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
             gameManager.SetSystemStatus += SetSystemStatus;
         }
 
         private void SetArrangementSystemStatus(bool enabled)
         {
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = enabled;
+        }
+
+        private void SetSystemStatus<T>(bool enabled) where T : SystemBase
+        {
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<T>().Enabled = enabled;
         }
 
         private void SetSystemStatus(bool enabled)
@@ -30,6 +35,5 @@ namespace Assets.Scripts.Systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CountdownSystem>().Enabled = enabled;
         }
-
     }
 }

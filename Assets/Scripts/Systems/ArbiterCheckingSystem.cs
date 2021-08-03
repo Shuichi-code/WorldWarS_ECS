@@ -14,7 +14,6 @@ namespace Assets.Scripts.Systems
         private GameManager gameManager;
 
         public delegate void GameWinnerDelegate(Team winningTeam);
-
         public event GameWinnerDelegate OnGameWin;
 
         protected override void OnCreate()
@@ -24,11 +23,6 @@ namespace Assets.Scripts.Systems
             ecbSystem = World
                 .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
             gameManager = GameManager.GetInstance();
-        }
-
-        void Awake()
-        {
-
         }
 
         protected override void OnUpdate()
@@ -49,9 +43,9 @@ namespace Assets.Scripts.Systems
                 .WithAll<ArbiterComponent>()
                 .ForEach((Entity arbiterEntity, in ArbiterComponent arbiter) =>
                 {
-                    FightResult fightResult = FightResult.NoFight;
-                    int attackingRank = rankComponentArray[arbiter.attackingPieceEntity].Rank;
-                    Team attackingTeam = teamComponentArray[arbiter.attackingPieceEntity].myTeam;
+                    var fightResult = FightResult.NoFight;
+                    var attackingRank = rankComponentArray[arbiter.attackingPieceEntity].Rank;
+                    var attackingTeam = teamComponentArray[arbiter.attackingPieceEntity].myTeam;
                     var winningPieceEntity = Entity.Null;
                     if (IsThereAFight(arbiter))
                     {

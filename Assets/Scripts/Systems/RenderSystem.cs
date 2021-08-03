@@ -71,7 +71,7 @@ namespace Assets.Scripts.Systems
 
         private static void Render(Translation translation, Material material)
         {
-            Mesh quadMesh = gameManager.quadMesh;
+            var quadMesh = gameManager.quadMesh;
             Graphics.DrawMesh(
                 quadMesh,
                 translation.Value,

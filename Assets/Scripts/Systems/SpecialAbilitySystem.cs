@@ -4,12 +4,14 @@ using Assets.Scripts.Tags;
 using System;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
     public class SpecialAbilitySystem : SystemBase
     {
         private EntityCommandBufferSystem ecbSystem;
+
         protected override void OnCreate()
         {
             // Find the ECB system once and store it for later usage
@@ -19,19 +21,36 @@ namespace Assets.Scripts.Systems
         }
         protected override void OnUpdate()
         {
-            var specialAbilityPlayerQuery = GetEntityQuery(
-                ComponentType.ReadOnly<SpecialAbilityComponent>(),
-                ComponentType.ReadOnly<ArmyComponent>(),
-                ComponentType.ReadOnly<TeamComponent>());
+            #region initializingdata
+            var specialAbilityPlayerQuery = GetPlayerEntitiesWithSpecialAbilities();
             if (specialAbilityPlayerQuery.CalculateEntityCount() == 0) return;
-            var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = GetEcbParallelWriter();
             var specialEntityArray = specialAbilityPlayerQuery.ToEntityArray(Allocator.Temp);
             var armyArray = specialAbilityPlayerQuery.ToComponentDataArray<ArmyComponent>(Allocator.Temp);
             var teamArray = specialAbilityPlayerQuery.ToComponentDataArray<TeamComponent>(Allocator.Temp);
 
+            #endregion
+
+            ApplySpecialAbilityToArmy(armyArray, specialEntityArray);
+            armyArray.Dispose();
+            teamArray.Dispose();
+            RemoveSpecialAbilityComponents(ecb);
+
+
+
+        }
+
+        private EntityCommandBuffer.ParallelWriter GetEcbParallelWriter()
+        {
+            return ecbSystem.CreateCommandBuffer().AsParallelWriter();
+        }
+
+        private void ApplySpecialAbilityToArmy(NativeArray<ArmyComponent> armyArray, NativeArray<Entity> specialEntityArray)
+        {
             for (var index = 0; index < armyArray.Length; index++)
             {
                 var army = armyArray[index];
+                var playerEntity = specialEntityArray[index];
                 switch (army.army)
                 {
                     case Army.America:
@@ -39,23 +58,29 @@ namespace Assets.Scripts.Systems
                     case Army.Nazi:
                         break;
                     case Army.Russia:
-                        if (HasComponent<PlayerTag>(specialEntityArray[index]))
+
+                        if (HasComponent<PlayerTag>(playerEntity))
                         {
-                            AddBulletToSpy<PlayerTag>();
+                            AddBulletToSpy<PlayerTag>(playerEntity);
                         }
-                        else
+                        else if (HasComponent<EnemyTag>(playerEntity))
                         {
-                            AddBulletToSpy<EnemyTag>();
+                            AddBulletToSpy<EnemyTag>(playerEntity);
                         }
+
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
+        }
 
-            armyArray.Dispose();
-            teamArray.Dispose();
-            RemoveSpecialAbilityComponents(ecb);
+        private EntityQuery GetPlayerEntitiesWithSpecialAbilities()
+        {
+            return GetEntityQuery(
+                ComponentType.ReadOnly<SpecialAbilityComponent>(),
+                ComponentType.ReadOnly<ArmyComponent>(),
+                ComponentType.ReadOnly<TeamComponent>());
         }
 
         private void RemoveSpecialAbilityComponents(EntityCommandBuffer.ParallelWriter ecb)
@@ -65,13 +90,9 @@ namespace Assets.Scripts.Systems
             ecbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private void AddBulletToSpy<T>()
+        private void AddBulletToSpy<T>(Entity playerEntity)
         {
-            var pieceEntityQuery = GetEntityQuery(
-                ComponentType.ReadOnly<RankComponent>(),
-                ComponentType.ReadOnly<TeamComponent>(),
-                ComponentType.ReadOnly<PieceTag>(),
-                ComponentType.ReadOnly<T>());
+            var pieceEntityQuery = GetPieceEntityQuery<T>();
             if (pieceEntityQuery.CalculateEntityCount() == 0) return;
             var pieceEntityArray = pieceEntityQuery.ToEntityArray(Allocator.Temp);
             var pieceRankArray = pieceEntityQuery.ToComponentDataArray<RankComponent>(Allocator.Temp);
@@ -81,9 +102,79 @@ namespace Assets.Scripts.Systems
                 var pieceRank = pieceRankArray[index].Rank;
                 if (HasComponent<BulletComponent>(pieceEntity) || pieceRank != Piece.Spy) continue;
                 EntityManager.AddComponentData(pieceEntity, new BulletComponent());
+                EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());
                 break;
             }
             pieceEntityArray.Dispose();
+        }
+
+        private EntityQuery GetPieceEntityQuery<T>()
+        {
+            return GetEntityQuery(
+                ComponentType.ReadOnly<RankComponent>(),
+                ComponentType.ReadOnly<TeamComponent>(),
+                ComponentType.ReadOnly<PieceTag>(),
+                ComponentType.ReadOnly<T>());
+        }
+    }
+
+    public class ChargeAbilitySystem : SystemBase
+    {
+        public delegate void ChargeAbilityActivateDelegate(bool activateUI);
+        public event ChargeAbilityActivateDelegate ChargedAbilityActiveEvent;
+        private EntityCommandBufferSystem ecbSystem;
+
+        protected override void OnCreate()
+        {
+            ecbSystem = World
+                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        }
+        protected override void OnUpdate()
+        {
+            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
+            var gm = gmQuery.GetSingleton<GameManagerComponent>();
+            var teamToMove = gm.teamToMove;
+            var chargedEventArchetype = EntityManager.CreateArchetype(typeof(ChargedAbilityEventComponent));
+            var ecb = ecbSystem.CreateCommandBuffer();
+
+            Entities.WithAll<ChargedAbilityTag,PlayerTag>().
+                ForEach((Entity e, int entityInQueryIndex, in TeamComponent teamComponent) =>
+                {
+                    if (teamToMove == teamComponent.myTeam )
+                    {
+                        if (HasComponent<ChargeEventFiredTag>(e)) return;
+                        ecb.AddComponent(e, new ChargeEventFiredTag());
+                        BroadcastChargeAbilityEvent(ecb, chargedEventArchetype, true);
+
+                    }
+                    else
+                    {
+                        if (!HasComponent<ChargeEventFiredTag>(e)) return;
+                        ecb.RemoveComponent<ChargeEventFiredTag>(e);
+                        BroadcastChargeAbilityEvent(ecb, chargedEventArchetype, false);
+                    }
+                }).Schedule();
+                this.CompleteDependency();
+
+            ToggleChargeAbilityUi();
+        }
+
+        private void ToggleChargeAbilityUi()
+        {
+            Entities
+                .ForEach((Entity e, in ChargedAbilityEventComponent eventComponent) =>
+                {
+                    ChargedAbilityActiveEvent?.Invoke(eventComponent.activateUI);
+                })
+                .WithoutBurst().Run();
+            EntityManager.DestroyEntity(GetEntityQuery(typeof(ChargedAbilityEventComponent)));
+        }
+
+        private static void BroadcastChargeAbilityEvent(EntityCommandBuffer ecb,
+            EntityArchetype chargedEventArchetype, bool setUIActive)
+        {
+            var chargedEventEntity = ecb.CreateEntity( chargedEventArchetype);
+            ecb.AddComponent(chargedEventEntity, new ChargedAbilityEventComponent() {activateUI = setUIActive});
         }
     }
 }

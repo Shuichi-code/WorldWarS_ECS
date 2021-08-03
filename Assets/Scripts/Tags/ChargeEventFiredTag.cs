@@ -4,7 +4,7 @@ using System;
 namespace Assets.Scripts.Tags
 {
     [Serializable]
-    public struct DefenderHomeCellTag : IComponentData
+    public struct ChargeEventFiredTag : IComponentData
     {
 
     }
