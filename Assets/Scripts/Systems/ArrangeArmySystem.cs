@@ -100,7 +100,7 @@ namespace Assets.Scripts.Systems
                     if (Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) && mouseButtonPressed &&
                         !HasComponent<HighlightedTag>(cellEntity) && (playerTeam == pieceTeam || playerTeam == cellTeam))
                     {
-                        Tag.TagCellAsHighlighted(ecb, entityInQueryIndex, cellEntity);
+                        Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, cellEntity);
                     }
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);
@@ -140,7 +140,7 @@ namespace Assets.Scripts.Systems
                 WithAll<HighlightedTag>().
                 ForEach((Entity highlightedEntity, int entityInQueryIndex) =>
             {
-                Tag.RemoveHighlightedTag(ecb, entityInQueryIndex, highlightedEntity);
+                Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, highlightedEntity);
             }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);
         }

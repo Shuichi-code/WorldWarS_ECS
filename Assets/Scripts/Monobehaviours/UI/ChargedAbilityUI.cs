@@ -36,7 +36,7 @@ namespace Assets.Scripts.Monobehaviours.UI
         private void ActivateChargedAbility()
         {
             Debug.Log("Activating ability!");
-
+            gameManager.ActivateAbility();
         }
     }
 }

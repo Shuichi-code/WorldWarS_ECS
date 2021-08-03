@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement style="width: 100%; height: 100%; justify-content: flex-end; align-items: auto;">
-        <ui:Button text="Use Charged Ability" display-tooltip-when-elided="true" name="chargedAbilityBtn" style="-unity-text-align: middle-center; white-space: normal;" />
+        <ui:Button text="Use Charged Ability" display-tooltip-when-elided="true" name="chargedAbilityBtn" style="-unity-text-align: middle-center; white-space: normal; background-color: rgb(142, 68, 173);" />
     </ui:VisualElement>
 </ui:UXML>

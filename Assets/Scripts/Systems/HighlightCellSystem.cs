@@ -44,12 +44,12 @@ public class HighlightCellSystem : SystemBase
                     if (Location.IsMatchLocation(cellArrayPositions[i], cellTranslation.Value))
                     {
                         if (!HasComponent<PieceOnCellComponent>(e))
-                            Tag.TagCellAsHighlighted(ecb, entityInQueryIndex, e);
+                            Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, e);
                         else
                         {
                             var cellPieceTeam = GetComponent<TeamComponent>(GetComponent<PieceOnCellComponent>(e).PieceEntity).myTeam;
                             if (selectedPieceTeam != cellPieceTeam)
-                                Tag.TagCellAsEnemy(ecb, entityInQueryIndex, e);
+                                Tag.AddTag<EnemyCellTag>(ecb, entityInQueryIndex, e);
                         }
                     }
                     i++;

@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Assets.Scripts.Class;
+﻿using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+using Assets.Scripts.Systems;
 using Assets.Scripts.Tags;
+using System;
+using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Random = System.Random;
 
 
@@ -36,7 +35,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public const float PlayerClockDuration = float.MaxValue;
 
         public delegate void ActivateSystem(bool enabled);
-        public event ActivateSystem SetArrangementSystemStatus;
+        public delegate void ActivateSingleSystem<T>(bool enabled);
+        public event ActivateSingleSystem<ArrangeArmySystem> SetArrangementSystemStatus;
+        public event ActivateSingleSystem<ActivateAbilitySystem> SetActivateAbilitySystemStatus;
         public event ActivateSystem SetSystemStatus;
 
         public Player player { get; set; }
@@ -61,9 +62,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
             {
                 var playerEntityArchetype = entityManager.CreateArchetype(
                     typeof(T)
-                    ,typeof(TeamComponent)
-                    ,typeof(TimeComponent)
-                    ,typeof(ArmyComponent)
+                    , typeof(TeamComponent)
+                    , typeof(TimeComponent)
+                    , typeof(ArmyComponent)
                 );
                 var pEntity = entityManager.CreateEntity(playerEntityArchetype);
             }
@@ -158,6 +159,11 @@ namespace Assets.Scripts.Monobehaviours.Managers
             SetGameState(GameState.Playing);
             SetSystemsEnabled(true);
             SetArrangementStatus(false);
+        }
+
+        public void ActivateAbility()
+        {
+            SetActivateAbilitySystemStatus?.Invoke(enabled);
         }
     }
 }

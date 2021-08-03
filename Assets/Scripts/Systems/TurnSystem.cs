@@ -29,10 +29,10 @@ namespace Assets.Scripts.Systems
                 .ForEach((Entity e, int entityInQueryIndex, in TeamComponent teamComponent) =>
                 {
                     if (teamComponent.myTeam == teamToMove && !HasComponent<PlayableTag>(e))
-                        Tag.TagAsPlayable(ecb, entityInQueryIndex, e);
+                        Tag.AddTag<PlayableTag>(ecb, entityInQueryIndex, e);
 
                     else if (teamComponent.myTeam != teamToMove && HasComponent<PlayableTag>(e))
-                        Tag.RemovePlayableTag(ecb, entityInQueryIndex, e);
+                        Tag.RemoveTag<PlayableTag>(ecb, entityInQueryIndex, e);
 
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);

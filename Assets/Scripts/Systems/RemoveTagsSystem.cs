@@ -25,10 +25,10 @@ namespace Assets.Scripts.Systems
                 {
                     if (mouseButtonHeld) return;
                     if (HasComponent<HighlightedTag>(e))
-                        Tag.RemoveHighlightedTag(ecb, entityInQueryIndex, e);
+                        Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, e);
 
                     else if (HasComponent<EnemyCellTag>(e))
-                        Tag.RemoveEnemyCellTag(ecb, entityInQueryIndex, e);
+                        Tag.RemoveTag<EnemyCellTag>(ecb, entityInQueryIndex, e);
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);
         }

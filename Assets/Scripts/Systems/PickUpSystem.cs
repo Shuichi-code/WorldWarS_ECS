@@ -38,7 +38,7 @@ namespace Assets.Scripts.Systems
                     float3 selectedPieceRoundedLocation = roundedWorldPos;
 
                     if (Location.IsMatchLocation(pieceRoundedLocation, selectedPieceRoundedLocation) && mouseButtonDown && !HasComponent<SelectedTag>(e))
-                        Tag.TagAsSelectedPiece(ecb, entityInQueryIndex, e);
+                        Tag.AddTag<SelectedTag>(ecb, entityInQueryIndex, e);
 
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);

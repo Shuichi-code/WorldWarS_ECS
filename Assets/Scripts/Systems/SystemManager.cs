@@ -11,29 +11,26 @@ namespace Assets.Scripts.Systems
         {
             gameManager = GameManager.GetInstance();
             gameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
-            gameManager.SetSystemStatus += SetSystemStatus;
+            gameManager.SetActivateAbilitySystemStatus += SetSystemStatus<ActivateAbilitySystem>;
+            gameManager.SetSystemStatus += SetGameSystemStatus;
         }
 
-        private void SetArrangementSystemStatus(bool enabled)
-        {
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArrangeArmySystem>().Enabled = enabled;
-        }
-
-        private void SetSystemStatus<T>(bool enabled) where T : SystemBase
+        public static void SetSystemStatus<T>(bool enabled) where T : SystemBase
         {
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<T>().Enabled = enabled;
         }
 
-        private void SetSystemStatus(bool enabled)
+        private static void SetGameSystemStatus(bool enabled)
         {
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CapturedSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<DragToMouseSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<HighlightCellSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<PickUpSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<RemoveTagsSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<TurnSystem>().Enabled = enabled;
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CountdownSystem>().Enabled = enabled;
+            SetSystemStatus<ArbiterCheckingSystem>(enabled);
+            SetSystemStatus<CapturedSystem>(enabled);
+            SetSystemStatus<DragToMouseSystem>(enabled);
+            SetSystemStatus<HighlightCellSystem>(enabled);
+            SetSystemStatus<PickUpSystem>(enabled);
+            SetSystemStatus<RemoveTagsSystem>(enabled);
+            SetSystemStatus<TurnSystem>(enabled);
+            SetSystemStatus<CountdownSystem>(enabled);
+            //SetSystemStatus<ActivateAbilitySystem>(enabled);
         }
     }
 }
