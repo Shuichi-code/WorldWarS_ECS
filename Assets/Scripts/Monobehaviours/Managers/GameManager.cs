@@ -161,9 +161,14 @@ namespace Assets.Scripts.Monobehaviours.Managers
             SetArrangementStatus(false);
         }
 
-        public void ActivateAbility()
+        public void SetAbilitySystem(bool enabled)
         {
             SetActivateAbilitySystemStatus?.Invoke(enabled);
+        }
+
+        public void SetPickUpSystem()
+        {
+
         }
     }
 }

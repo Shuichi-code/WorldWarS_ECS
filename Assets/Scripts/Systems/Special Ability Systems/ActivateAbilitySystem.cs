@@ -45,8 +45,7 @@ namespace Assets.Scripts.Systems
             //highlight all enemy pieces in red
             HighlightEnemyPieces(ecb);
             //disable the pickupsystem
-            SystemManager.SetSystemStatus<PickUpSystem>(false);
-            SystemManager.SetSystemStatus<RemoveTagsSystem>(false);
+            SystemManager.SetPickupSystems(false);
             //get the piece that the player clicks
 
             //create special arbiter for the fight, if player wins, the piece is destroyed, if he loses the spy is revealed.

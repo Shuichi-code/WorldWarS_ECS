@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts.Monobehaviours.Managers;
+using Assets.Scripts.Systems.ArmySystems;
 using Unity.Entities;
 using UnityEngine;
 
@@ -20,6 +21,11 @@ namespace Assets.Scripts.Systems
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<T>().Enabled = enabled;
         }
 
+        public static void SetSpecialAbilitySystems(bool enabled)
+        {
+            SetSystemStatus<ActivateAbilitySystem>(enabled);
+            SetSystemStatus<SpecialAbilitySystem>(enabled);
+        }
         private static void SetGameSystemStatus(bool enabled)
         {
             SetSystemStatus<ArbiterCheckingSystem>(enabled);
@@ -30,7 +36,12 @@ namespace Assets.Scripts.Systems
             SetSystemStatus<RemoveTagsSystem>(enabled);
             SetSystemStatus<TurnSystem>(enabled);
             SetSystemStatus<CountdownSystem>(enabled);
-            //SetSystemStatus<ActivateAbilitySystem>(enabled);
+        }
+
+        public static void SetPickupSystems(bool enabled)
+        {
+            SetSystemStatus<RemoveTagsSystem>(enabled);
+            SetSystemStatus<PickUpSystem>(enabled);
         }
     }
 }
