@@ -114,13 +114,12 @@ namespace Assets.Scripts.Systems
                 .ForEach((Entity e, in GameFinishedEventComponent eventComponent) =>
                 {
                     OnGameWin?.Invoke(eventComponent.winningTeam);
-                    //ecb.DestroyEntity(e);
                 })
                 .WithoutBurst().Run();
             EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
         }
 
-        private static void ChangeTurn(Team attackingTeam)
+        public static void ChangeTurn(Team attackingTeam)
         {
             GameManager.GetInstance().SetGameState(GameState.Playing, GameManager.SwapTeam(attackingTeam));
         }

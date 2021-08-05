@@ -60,8 +60,6 @@ namespace Assets.Scripts.Monobehaviours.UI
                 //turn on remove tag and pickup system
                 SystemManager.SetPickupSystems(true);
             }
-            //Debug.Log("Activating ability!");
-
         }
     }
 }

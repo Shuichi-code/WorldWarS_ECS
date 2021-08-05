@@ -156,10 +156,10 @@ namespace Assets.Scripts.Systems
                 }).Schedule();
                 this.CompleteDependency();
 
-            ToggleChargeAbilityUi();
+            InvokeChargeAbilityEventIfAvailable();
         }
 
-        private void ToggleChargeAbilityUi()
+        private void InvokeChargeAbilityEventIfAvailable()
         {
             Entities
                 .ForEach((Entity e, in ChargedAbilityEventComponent eventComponent) =>

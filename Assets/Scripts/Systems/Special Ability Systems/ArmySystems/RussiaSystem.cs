@@ -42,21 +42,6 @@ namespace Assets.Scripts.Systems.ArmySystems
             var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
             //attach special ability to the player
             TagPlayerWithSpecialAbility(ecb, playerEntity, enemyEntity);
-
-            if (World.DefaultGameObjectInjectionWorld.GetExistingSystem<ChargeAbilitySystem>().Enabled && teamToMove == playerTeam.myTeam && playerArmy.army == Army.Russia)
-            {
-                //click the spy with a bullet first
-
-                //click on any enemy on the board
-                HighlightClickedEntities(roundedWorldPos, mouseButtonPressed, ecbParallel);
-                //pass the two entities to do battle
-
-                //if Russia loses, spy is revealed, if Russia wins, destroy the tagged enemy
-
-                //remove bullet from spy
-
-                //if there are no more spies with bullet in the army, remove chargedability tag from player
-            }
         }
 
 
@@ -71,42 +56,7 @@ namespace Assets.Scripts.Systems.ArmySystems
             Dependency.Complete();
         }
 
-        private void HighlightClickedEntities(float3 roundedWorldPos, bool mouseButtonPressed, EntityCommandBuffer.ParallelWriter ecb)
-        {
-            if (mouseButtonPressed)
-            {
-                Debug.Log(roundedWorldPos.ToString());
-            }
-            var playerTeam = GetPlayerComponent<TeamComponent>().myTeam;
-            Entities.WithAny<PieceTag>().ForEach(
-                (Entity pieceEntity, int entityInQueryIndex, in Translation cellTranslation, in RankComponent rankComponent, in TeamComponent teamComponent) =>
-                {
-                    var pieceTeam = HasComponent<PieceTag>(pieceEntity) ? teamComponent.myTeam : Team.Null;
-                    var cellTeam = HasComponent<CellTag>(pieceEntity) ? teamComponent.myTeam : Team.Null;
 
-                    var pieceRoundedLocation = math.round(cellTranslation.Value);
-                    if (Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) && mouseButtonPressed &&
-                        !HasComponent<HighlightedTag>(pieceEntity))
-                    {
-                        Debug.Log("Found Match!");
-                        if ((playerTeam == pieceTeam || playerTeam == cellTeam))
-                        {
-                            if(rankComponent.Rank == Piece.Spy && HasComponent<BulletComponent>(pieceEntity))
-                               Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, pieceEntity);
-                        }
-                        else
-                        {
-                            if (HasComponent<EnemyCellTag>(pieceEntity))
-                            {
-                                Tag.RemoveTag<EnemyCellTag>(ecb, entityInQueryIndex, pieceEntity);
-                                Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, pieceEntity);
-                            }
-                        }
-
-                    }
-                }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
-        }
         private Entity GetPlayerEntity<T>()
         {
             return GetPlayerEntityQuery<T>().GetSingletonEntity();
