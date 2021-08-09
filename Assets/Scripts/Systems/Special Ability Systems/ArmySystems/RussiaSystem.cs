@@ -24,23 +24,13 @@ namespace Assets.Scripts.Systems.ArmySystems
         }
         protected override void OnUpdate()
         {
-
-            var mouseButtonPressed = Input.GetMouseButtonDown(0);
-            var roundedWorldPos = Location.GetRoundedMousePosition();
-
             var ecb = ecbSystem.CreateCommandBuffer();
-            var gm = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>()).GetSingleton<GameManagerComponent>();
-            var teamToMove = gm.teamToMove;
 
             var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
             if (entities.CalculateEntityCount() == 0) return;
             var playerEntity = GetPlayerEntity<PlayerTag>();
             var enemyEntity = GetPlayerEntity<EnemyTag>();
-            var playerTeam = GetPlayerComponent<TeamComponent>();
-            var playerArmy = GetPlayerComponent<ArmyComponent>();
 
-            var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
-            //attach special ability to the player
             TagPlayerWithSpecialAbility(ecb, playerEntity, enemyEntity);
         }
 
@@ -55,7 +45,6 @@ namespace Assets.Scripts.Systems.ArmySystems
                 }).Schedule();
             Dependency.Complete();
         }
-
 
         private Entity GetPlayerEntity<T>()
         {

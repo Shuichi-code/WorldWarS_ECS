@@ -27,17 +27,12 @@ namespace Assets.Scripts.Systems
             var ecb = GetEcbParallelWriter();
             var specialEntityArray = specialAbilityPlayerQuery.ToEntityArray(Allocator.Temp);
             var armyArray = specialAbilityPlayerQuery.ToComponentDataArray<ArmyComponent>(Allocator.Temp);
-            var teamArray = specialAbilityPlayerQuery.ToComponentDataArray<TeamComponent>(Allocator.Temp);
 
             #endregion
 
             ApplySpecialAbilityToArmy(armyArray, specialEntityArray);
             armyArray.Dispose();
-            teamArray.Dispose();
             RemoveSpecialAbilityComponents(ecb);
-
-
-
         }
 
         private EntityCommandBuffer.ParallelWriter GetEcbParallelWriter()
@@ -138,7 +133,7 @@ namespace Assets.Scripts.Systems
             var ecb = ecbSystem.CreateCommandBuffer();
 
             Entities.WithAll<ChargedAbilityTag,PlayerTag>().
-                ForEach((Entity e, int entityInQueryIndex, in TeamComponent teamComponent) =>
+                ForEach((Entity e, in TeamComponent teamComponent) =>
                 {
                     if (teamToMove == teamComponent.myTeam )
                     {

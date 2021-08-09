@@ -1,14 +1,13 @@
+using System;
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
-using System;
-using Assets.Scripts.Monobehaviours.Managers;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace Assets.Scripts.Systems
+namespace Assets.Scripts.Systems.Special_Ability_Systems
 {
     public class ActivateAbilitySystem : SystemBase
     {
@@ -51,9 +50,9 @@ namespace Assets.Scripts.Systems
                 HighlightEnemyPieces(ecbParallelWriter);
 
             SystemManager.SetPickupSystems(false);
-            //get the piece that the player clicks
+
             HighlightClickedEntities(roundedWorldPos, mouseButtonPressed, ecbParallelWriter);
-            //create special arbiter for the fight, if player wins, the piece is destroyed, if he loses the spy is revealed.
+
 
             var fightingEntitiesQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<PieceTag>());
             if (fightingEntitiesQuery.CalculateEntityCount() != 2) return;

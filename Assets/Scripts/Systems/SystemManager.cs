@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Systems.ArmySystems;
+using Assets.Scripts.Systems.Special_Ability_Systems;
 using Unity.Entities;
 using UnityEngine;
 
@@ -7,13 +8,13 @@ namespace Assets.Scripts.Systems
 {
     public class SystemManager : MonoBehaviour
     {
-        public GameManager gameManager { get; set; }
+        public GameManager GameManager { get; set; }
         void OnEnable()
         {
-            gameManager = GameManager.GetInstance();
-            gameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
-            gameManager.SetActivateAbilitySystemStatus += SetSystemStatus<ActivateAbilitySystem>;
-            gameManager.SetSystemStatus += SetGameSystemStatus;
+            GameManager = GameManager.GetInstance();
+            GameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
+            GameManager.SetActivateAbilitySystemStatus += SetSystemStatus<ActivateAbilitySystem>;
+            GameManager.SetSystemStatus += SetGameSystemStatus;
         }
 
         public static void SetSystemStatus<T>(bool enabled) where T : SystemBase
