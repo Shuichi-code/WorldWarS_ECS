@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems.ArmySystems
 {
-    public class RussiaSystem : SystemBase
+    public class TagSpecialAbilitySystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
 
@@ -25,17 +25,27 @@ namespace Assets.Scripts.Systems.ArmySystems
         protected override void OnUpdate()
         {
             var ecb = ecbSystem.CreateCommandBuffer();
-
-            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
-            if (entities.CalculateEntityCount() == 0) return;
             var playerEntity = GetPlayerEntity<PlayerTag>();
             var enemyEntity = GetPlayerEntity<EnemyTag>();
 
-            TagPlayerWithSpecialAbility(ecb, playerEntity, enemyEntity);
+            if (HasComponent<ChargedAbilityTag>(playerEntity) && HasComponent<ChargedAbilityTag>(enemyEntity)) return;
+            Entities.WithAll<PieceTag>().ForEach(
+                (Entity e, in ArmyComponent armyComponent, in RankComponent rankComponent) =>
+                {
+                    if (armyComponent.army != Army.Nazi) return;
+                    if (rankComponent.Rank != Piece.FiveStarGeneral) return;
+                    Debug.Log("Found Nazi Five star general!");
+                    ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity, new SpecialAbilityComponent());
+                }).Schedule();
+            Dependency.Complete();
+
+
+            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
+            if (entities.CalculateEntityCount() == 0) return;
+            TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
         }
 
-
-        private void TagPlayerWithSpecialAbility(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
+        private void TagPlayerWithSpecialAbilityForRussia(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
         {
             Entities.WithAll<CapturedComponent>().WithAny<PlayerTag, EnemyTag>().ForEach(
                 (Entity e, in ArmyComponent armyComponent) =>

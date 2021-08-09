@@ -51,6 +51,7 @@ namespace Assets.Scripts.Systems
                     case Army.America:
                         break;
                     case Army.Nazi:
+                        EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());
                         break;
                     case Army.Russia:
 
