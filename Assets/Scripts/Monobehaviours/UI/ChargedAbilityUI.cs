@@ -45,20 +45,17 @@ namespace Assets.Scripts.Monobehaviours.UI
 
         private void ActivateChargedAbility()
         {
-            //if the player has a spy with a bullet activate the charge
+
             if (!World.DefaultGameObjectInjectionWorld.GetExistingSystem<ActivateAbilitySystem>().Enabled)
             {
                 SystemManager.SetSystemStatus<ActivateAbilitySystem>(true);
                 SystemManager.SetPickupSystems(false);
-                //change the button's text to Deactivate Ability
                 chargeButton.GetFirstOfType<Button>().text = "Deactivate Ability";
             }
             else
             {
                 SystemManager.SetSystemStatus<ActivateAbilitySystem>(false);
                 chargeButton.GetFirstOfType<Button>().text = "Activate Ability";
-
-                //turn on remove tag and pickup system
                 SystemManager.SetPickupSystems(true);
             }
         }

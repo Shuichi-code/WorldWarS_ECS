@@ -6,6 +6,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using GameConstants = Assets.Scripts.Monobehaviours.Managers.GameConstants;
 
 namespace Assets.Scripts.Monobehaviours
 {

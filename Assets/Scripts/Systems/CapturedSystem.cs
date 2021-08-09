@@ -1,11 +1,17 @@
+using Assets.Scripts.Class;
 using Assets.Scripts.Components;
+using Assets.Scripts.Monobehaviours.Managers;
+using Assets.Scripts.Tags;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace Assets.Scripts.Systems
 {
     public class CapturedSystem : SystemBase
     {
-        EndSimulationEntityCommandBufferSystem ecbSystem;
+        private EndSimulationEntityCommandBufferSystem ecbSystem;
+
         protected override void OnCreate()
         {
             base.OnCreate();
@@ -19,10 +25,11 @@ namespace Assets.Scripts.Systems
 
             Entities
                 .WithAll<CapturedComponent>()
-                .ForEach((Entity e, int entityInQueryIndex) => {
-                    ecb.DestroyEntity(entityInQueryIndex, e);
-
-                    //TODO: develop capture algorithm that puts the pieces on their respective player's side
+                .ForEach((Entity e, int entityInQueryIndex, ref Translation translation) =>
+                {
+                    translation.Value = GameConstants.PrisonCoordinates;
+                    ecb.RemoveComponent<CapturedComponent>(entityInQueryIndex, e);
+                    ecb.AddComponent<PrisonerTag>(entityInQueryIndex, e);
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(this.Dependency);
         }

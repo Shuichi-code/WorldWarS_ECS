@@ -4,6 +4,7 @@ using Assets.Scripts.Class;
 using Assets.Scripts.Monobehaviours.Managers;
 using UnityEngine;
 using UnityEngine.UIElements;
+using GameConstants = Assets.Scripts.Monobehaviours.Managers.GameConstants;
 
 public class ArmySelectUI : MonoBehaviour
 {

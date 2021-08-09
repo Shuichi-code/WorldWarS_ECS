@@ -141,7 +141,6 @@ namespace Assets.Scripts.Systems
                         if (HasComponent<ChargeEventFiredTag>(e)) return;
                         ecb.AddComponent(e, new ChargeEventFiredTag());
                         BroadcastChargeAbilityEvent(ecb, chargedEventArchetype, true);
-
                     }
                     else
                     {

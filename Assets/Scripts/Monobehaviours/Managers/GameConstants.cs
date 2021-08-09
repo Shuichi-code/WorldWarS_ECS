@@ -1,4 +1,6 @@
-﻿namespace Assets.Scripts.Monobehaviours.Managers
+﻿using Unity.Mathematics;
+
+namespace Assets.Scripts.Monobehaviours.Managers
 {
     public class GameConstants
     {
@@ -29,5 +31,7 @@
 
         #endregion
 
+
+        public static float3 PrisonCoordinates => new float3(100, 100, 100);
     }
 }

@@ -111,6 +111,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private void SetArrangementStatus(bool enabled)
         {
             SetArrangementSystemStatus?.Invoke(enabled);
+            SetSystemsEnabled(!enabled);
+            SetActivateAbilitySystemStatus?.Invoke(!enabled);
         }
 
         private static string RandomizeOpening()
@@ -160,16 +162,6 @@ namespace Assets.Scripts.Monobehaviours.Managers
             SetGameState(GameState.Playing);
             SetSystemsEnabled(true);
             SetArrangementStatus(false);
-        }
-
-        public void SetAbilitySystem(bool enabled)
-        {
-            SetActivateAbilitySystemStatus?.Invoke(enabled);
-        }
-
-        public void SetPickUpSystem()
-        {
-
         }
     }
 }

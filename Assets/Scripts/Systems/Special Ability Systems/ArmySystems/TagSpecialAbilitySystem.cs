@@ -29,20 +29,39 @@ namespace Assets.Scripts.Systems.ArmySystems
             var enemyEntity = GetPlayerEntity<EnemyTag>();
 
             if (HasComponent<ChargedAbilityTag>(playerEntity) && HasComponent<ChargedAbilityTag>(enemyEntity)) return;
+
+            TagPlayerWithSpecialAbilityForNazi(ecb, playerEntity, enemyEntity);
+
+            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
+            if (entities.CalculateEntityCount() == 0) return;
+            TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
+        }
+
+        private void TagPlayerWithSpecialAbilityForNazi(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
+        {
             Entities.WithAll<PieceTag>().ForEach(
                 (Entity e, in ArmyComponent armyComponent, in RankComponent rankComponent) =>
                 {
                     if (armyComponent.army != Army.Nazi) return;
                     if (rankComponent.Rank != Piece.FiveStarGeneral) return;
-                    Debug.Log("Found Nazi Five star general!");
-                    ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity, new SpecialAbilityComponent());
+                    if (!HasComponent<PrisonerTag>(e))
+                    {
+                        ecb.AddComponent<ChargedFiveStarGeneralTag>(e);
+                        ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity,
+                            new SpecialAbilityComponent());
+                    }
+                    else
+                    {
+                        if (!HasComponent<ChargedAbilityTag>(playerEntity) &&
+                            !HasComponent<ChargedAbilityTag>(enemyEntity)) return;
+                        ecb.RemoveComponent<ChargedFiveStarGeneralTag>(e);
+                        ecb.RemoveComponent<ChargedAbilityTag>(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity);
+                    }
+
                 }).Schedule();
             Dependency.Complete();
 
-
-            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
-            if (entities.CalculateEntityCount() == 0) return;
-            TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
+            //if player no longer has five star general in prison but has charged ability component, remove charge ability component
         }
 
         private void TagPlayerWithSpecialAbilityForRussia(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)

@@ -13,7 +13,7 @@ namespace Assets.Scripts.Systems
         {
             GameManager = GameManager.GetInstance();
             GameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
-            GameManager.SetActivateAbilitySystemStatus += SetSystemStatus<ActivateAbilitySystem>;
+            GameManager.SetActivateAbilitySystemStatus += SetSpecialAbilitySystems;
             GameManager.SetSystemStatus += SetGameSystemStatus;
         }
 
@@ -24,8 +24,10 @@ namespace Assets.Scripts.Systems
 
         public static void SetSpecialAbilitySystems(bool enabled)
         {
-            SetSystemStatus<ActivateAbilitySystem>(enabled);
+            //SetSystemStatus<ActivateAbilitySystem>(enabled);
             SetSystemStatus<SpecialAbilitySystem>(enabled);
+            SetSystemStatus<ChargeAbilitySystem>(enabled);
+            SetSystemStatus<TagSpecialAbilitySystem>(enabled);
         }
         private static void SetGameSystemStatus(bool enabled)
         {
