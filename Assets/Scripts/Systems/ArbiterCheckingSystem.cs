@@ -12,6 +12,7 @@ namespace Assets.Scripts.Systems
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
         private GameManager gameManager;
+        private static EntityArchetype _eventEntityArchetype;
 
         public delegate void GameWinnerDelegate(Team winningTeam);
         public event GameWinnerDelegate OnGameWin;
@@ -31,7 +32,7 @@ namespace Assets.Scripts.Systems
             #region Initializing Data
 
             var ecb = ecbSystem.CreateCommandBuffer();
-            var eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
+            _eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
 
             var teamComponentArray = GetComponentDataFromEntity<TeamComponent>();
             var rankComponentArray = GetComponentDataFromEntity<RankComponent>();
@@ -72,7 +73,7 @@ namespace Assets.Scripts.Systems
 
                             case FightResult.FlagDestroyed:
                                 var teamWinner = (defendingRank == Piece.Flag ? attackingTeam : GameManager.SwapTeam(attackingTeam));
-                                DeclareWinner(ecb, eventEntityArchetype, teamWinner);
+                                DeclareWinner(ecb, teamWinner);
                                 break;
 
                             case FightResult.NoFight:
@@ -98,7 +99,7 @@ namespace Assets.Scripts.Systems
                     }
 
                     if (HasFlagAlreadyPassedLastCell(flagPassedQuery))
-                        DeclareWinner(ecb, eventEntityArchetype, GameManager.SwapTeam(attackingTeam));
+                        DeclareWinner(ecb, GameManager.SwapTeam(attackingTeam));
 
                     ChangeTurn(attackingTeam);
 
@@ -144,10 +145,10 @@ namespace Assets.Scripts.Systems
             return arbiter.defendingPieceEntity != Entity.Null;
         }
 
-        public static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, EntityArchetype eventEntityArchetype, Team winningTeam)
+        public static void DeclareWinner(EntityCommandBuffer entityCommandBuffer, Team winningTeam)
         {
-            Entity eventEntity = entityCommandBuffer.CreateEntity(eventEntityArchetype);
-            entityCommandBuffer.SetComponent<GameFinishedEventComponent>(eventEntity, new GameFinishedEventComponent { winningTeam = winningTeam });
+            var eventEntity = entityCommandBuffer.CreateEntity();
+            entityCommandBuffer.AddComponent(eventEntity, new GameFinishedEventComponent { winningTeam = winningTeam });
         }
     }
 }

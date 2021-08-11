@@ -34,7 +34,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 case Army.America:
                     break;
                 case Army.Nazi:
-                    Blitzkrieg(ecb);
+                    CommenceBlitzkrieg(ecb);
                     break;
                 case Army.Russia:
                     ActivateOneShotOneKill(ecb);
@@ -42,32 +42,116 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
         }
-        private void Blitzkrieg(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void CommenceBlitzkrieg(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
             var roundedWorldPos = Location.GetRoundedMousePosition();
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
-
-            HighlightFiveStarGeneral(ecbParallelWriter);
-            HighlightColumn(ecbParallelWriter);
-            //check if player pressed on the five star general
-            if (mouseButtonPressed)
-            {
-                Entities.
-                    WithAll<PlayerTag,PieceTag>().
-                    ForEach((Entity e, ref Translation) =>
-                {
-
-                }).ScheduleParallel();
-                ecbSystem.AddJobHandleForProducer(Dependency);
-            }
             SystemManager.SetPickupSystems(false);
-
-            //RestoreNormalSystems();
+            HighlightFiveStarGeneral(ecbParallelWriter);
+            HighlightBatallion(ecbParallelWriter);
+            //check if player pressed on the five star general
+            if (!mouseButtonPressed) return;
+            var chargedFiveStarQuery = GetEntityQuery(ComponentType.ReadOnly<ChargedFiveStarGeneralTag>(),
+                ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<TeamComponent>());
+            if (chargedFiveStarQuery.CalculateEntityCount() == 0) return;
+            var chargedFiveStarTranslation = chargedFiveStarQuery.GetSingleton<Translation>();
+            if (!Location.IsMatchLocation(chargedFiveStarTranslation.Value, roundedWorldPos)) return;
+            ChargeBatallion(ecbParallelWriter);
+            var spearTipQuery = GetEntityQuery(ComponentType.ReadOnly<SpearTipTag>(),
+                ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
+            if (spearTipQuery.CalculateEntityCount() == 0) return;
+            //check if any enemy pieces have the same location as the speartip
+            CheckIfBatallionIsInBattle(ecbParallelWriter, spearTipQuery);
+            UpdatePieceOnCellComponents(ecbParallelWriter);
+            RemoveNaziTags(ecbParallelWriter);
+            ChangeTurn(chargedFiveStarQuery);
+            RestoreNormalSystems();
         }
 
-        private void HighlightColumn(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void CheckIfBatallionIsInBattle(EntityCommandBuffer.ParallelWriter ecbParallelWriter, EntityQuery spearTipQuery)
+        {
+            var spearTipLocation = spearTipQuery.GetSingleton<Translation>().Value;
+            var spearTipEntity = spearTipQuery.GetSingletonEntity();
+            Entities.WithAll<PieceTag, EnemyTag>()
+                .ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
+                {
+                    if (!Location.IsMatchLocation(spearTipLocation, translation.Value)) return;
+                    ecbParallelWriter.AddComponent(entityInQueryIndex, e, new FighterTag());
+                    ecbParallelWriter.AddComponent(entityInQueryIndex, spearTipEntity, new FighterTag());
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(Dependency);
+        }
+
+        private void UpdatePieceOnCellComponents(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        {
+            RemoveAllPieceOnCellComponents(ecbParallelWriter);
+
+            var piecesArray = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<Translation>()).ToComponentDataArray<Translation>(Allocator.TempJob);
+            var piecesEntityArray = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<Translation>()).ToEntityArray(Allocator.TempJob);
+            for (var index = 0; index < piecesArray.Length; index++)
+            {
+                var pieceTranslation = piecesArray[index];
+                Entities.WithAll<CellTag>().ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
+                {
+                    if (Location.IsMatchLocation(pieceTranslation.Value, translation.Value))
+                    {
+                        ecbParallelWriter.AddComponent(entityInQueryIndex, e,
+                            new PieceOnCellComponent()
+                            {
+                                PieceEntity = piecesEntityArray[index]
+                            });
+                    }
+                }).Schedule();
+                this.CompleteDependency();
+            }
+            piecesArray.Dispose();
+            piecesEntityArray.Dispose();
+        }
+
+        private void RemoveAllPieceOnCellComponents(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        {
+            Entities.WithAll<PieceOnCellComponent>()
+                .ForEach((Entity e, int entityInQueryIndex) =>
+                {
+                    ecbParallelWriter.RemoveComponent<PieceOnCellComponent>(entityInQueryIndex, e);
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(Dependency);
+        }
+
+        private void RemoveNaziTags(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        {
+            Entities.
+                WithAny<SpearTipTag, ChargedFiveStarGeneralTag>().
+                ForEach((Entity e, int entityInQueryIndex) =>
+            {
+                if (HasComponent<SpearTipTag>(e))
+                {
+                    Tag.RemoveTag<SpearTipTag>(ecbParallelWriter, entityInQueryIndex, e);
+                }
+                else if (HasComponent<ChargedFiveStarGeneralTag>(e))
+                {
+                    Tag.RemoveTag<ChargedFiveStarGeneralTag>(ecbParallelWriter, entityInQueryIndex, e);
+                }
+            }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(Dependency);
+        }
+
+        private void ChargeBatallion(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        {
+            Entities.WithAll<HighlightedTag, PieceTag, PlayerTag>()
+                .ForEach((Entity e, int entityInQueryIndex, ref Translation translation) =>
+                {
+                    translation.Value.y++;
+                    ecbParallelWriter.SetComponent(entityInQueryIndex,e, new OriginalLocationComponent()
+                    {
+                        originalLocation = translation.Value
+                    });
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(Dependency);
+        }
+
+        private void HighlightBatallion(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
             var chargedFiveStarGeneralQuery = GetEntityQuery(ComponentType.ReadOnly<ChargedFiveStarGeneralTag>(), ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<Translation>());
             if (chargedFiveStarGeneralQuery.CalculateEntityCount() == 0) return;
@@ -82,29 +166,36 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var blitzFormation = GetBlitzFormation(foundPieceEntitiesArray);
             if (blitzFormation != BlitzkriegFormation.InvalidBlitz)
             {
-                var validPosition1 = new float3();
-                var validPosition2 = new float3();
+                var validPosition1 = new Translation();
+                var validPosition2 = new float3(float.MaxValue);
+                var playerPiecesArray = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(),
+                    ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<Translation>()).ToComponentDataArray<Translation>(Allocator.Temp);
+                var isGeneralAtFront = false;
                 //proceed with highlighting
                 switch (blitzFormation)
                 {
                     case BlitzkriegFormation.GeneralAtFront:
                         //get at most two pieces behind the general and highlight them
-                        validPosition1 = new float3(chargedFiveStarGeneralTranslation.Value.x,
-                            chargedFiveStarGeneralTranslation.Value.y - 1, chargedFiveStarGeneralTranslation.Value.z);
-                        validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                        validPosition1.Value = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y - 1,
+                            chargedFiveStarGeneralTranslation.Value.z);
+                        if(Location.HasMatch(playerPiecesArray, validPosition1))
+                            validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y - 2, chargedFiveStarGeneralTranslation.Value.z);
-
+                        isGeneralAtFront = true;
+                        TagGeneralAsSpearTip(ecbParallelWriter);
                         break;
                     case BlitzkriegFormation.GeneralInMiddle:
-                        validPosition1 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                        validPosition1.Value = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y + 1, chargedFiveStarGeneralTranslation.Value.z);
                         validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y - 1, chargedFiveStarGeneralTranslation.Value.z);
                         break;
                     case BlitzkriegFormation.GeneralAtBack:
-                        validPosition1 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                        validPosition1.Value = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y + 1, chargedFiveStarGeneralTranslation.Value.z);
-                        validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                        if (Location.HasMatch(playerPiecesArray, validPosition1))
+                            validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y + 2, chargedFiveStarGeneralTranslation.Value.z);
                         break;
                     case BlitzkriegFormation.InvalidBlitz:
@@ -112,20 +203,36 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                HighlightSoldiersAroundGeneral(ecbParallelWriter, validPosition1, validPosition2);
+                HighlightSoldiersAroundGeneral(ecbParallelWriter, validPosition1.Value, validPosition2, isGeneralAtFront);
             }
             foundPieceEntitiesArray.Dispose();
             cellArrayPositions.Dispose();
         }
-        private void HighlightSoldiersAroundGeneral(EntityCommandBuffer.ParallelWriter ecbParallelWriter, float3 validPosition1,
-            float3 validPosition2)
+
+        private void TagGeneralAsSpearTip(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        {
+            Entities.
+                WithAll<ChargedFiveStarGeneralTag, PlayerTag>().
+                ForEach((Entity e, int entityInQueryIndex) =>
+                {
+                    ecbParallelWriter.AddComponent(entityInQueryIndex,e, new SpearTipTag());
+                }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(Dependency);
+        }
+
+        private void HighlightSoldiersAroundGeneral(EntityCommandBuffer.ParallelWriter ecbParallelWriter,
+            float3 validPosition1,
+            float3 validPosition2, bool isGeneralAtFront = false)
         {
             Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
             {
-                if (Location.IsMatchLocation(translation.Value, validPosition1) ||
-                    Location.IsMatchLocation(translation.Value, validPosition2))
+                if (!Location.IsMatchLocation(translation.Value, validPosition1) &&
+                    !Location.IsMatchLocation(translation.Value, validPosition2)) return;
+                ecbParallelWriter.AddComponent<HighlightedTag>(entityInQueryIndex, e);
+                if (Location.IsMatchLocation(translation.Value, validPosition1) && !isGeneralAtFront ||
+                    (isGeneralAtFront && HasComponent<ChargedFiveStarGeneralTag>(e)))
                 {
-                    ecbParallelWriter.AddComponent<HighlightedTag>(entityInQueryIndex, e);
+                    ecbParallelWriter.AddComponent<SpearTipTag>(entityInQueryIndex, e);
                 }
             }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(Dependency);
@@ -192,13 +299,13 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         /// <param name="cellPositionArray"></param>
         /// <param name="fiveStarGeneralTranslation"></param>
         /// <returns></returns>
-        private static NativeArray<Translation> SetPossibleValidLocation(NativeArray<Translation> cellPositionArray,float3 fiveStarGeneralTranslation)
+        private static NativeArray<Translation> SetPossibleValidLocation(NativeArray<Translation> cellPositionArray, float3 fiveStarGeneralTranslation)
         {
             for (var i = 0; i < cellPositionArray.Length; i++)
             {
                 cellPositionArray[i] = new Translation()
                 {
-                    Value = new float3(fiveStarGeneralTranslation.x, fiveStarGeneralTranslation.y + (i+1), fiveStarGeneralTranslation.z)
+                    Value = new float3(fiveStarGeneralTranslation.x, fiveStarGeneralTranslation.y + (i + 1), fiveStarGeneralTranslation.z)
                 };
             }
             return cellPositionArray;
@@ -258,11 +365,9 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                     break;
                 case FightResult.FlagDestroyed:
                     var ecb = ecbSystem.CreateCommandBuffer();
-                    var gameFinishEventArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
-
                     var playerTeam = playerQuery.GetSingleton<TeamComponent>()
                         .myTeam;
-                    ArbiterCheckingSystem.DeclareWinner(ecb, gameFinishEventArchetype, playerTeam);
+                    ArbiterCheckingSystem.DeclareWinner(ecb, playerTeam);
                     break;
                 case FightResult.NoFight:
                     break;
@@ -272,13 +377,17 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             //remove one bullet from the spy piece
             EntityManager.RemoveComponent<BulletComponent>(spyEntity);
             EntityManager.RemoveComponent<ChargeEventFiredTag>(playerQuery.GetSingletonEntity());
-            //if there are no more bullet in the player's army, remove the charge ability tag
+
             CheckBullets<PlayerTag>();
 
             RestoreNormalSystems();
             ChangeTurn(spyQuery);
         }
 
+        /// <summary>
+        /// Method for removing the chargeability from player if the russian army has no more bullets
+        /// </summary>
+        /// <typeparam name="T">Type of Player</typeparam>
         private void CheckBullets<T>() where T : struct, IComponentData
         {
             var bulletQuery = GetEntityQuery(ComponentType.ReadOnly<T>(),
@@ -296,9 +405,9 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             EntityManager.RemoveComponent<ChargedAbilityTag>(playerEntity);
         }
 
-        private static void ChangeTurn(EntityQuery spyQuery)
+        private static void ChangeTurn(EntityQuery singletonQuery)
         {
-            var spyTeam = spyQuery.GetSingleton<TeamComponent>().myTeam;
+            var spyTeam = singletonQuery.GetSingleton<TeamComponent>().myTeam;
             ArbiterCheckingSystem.ChangeTurn(spyTeam);
         }
 

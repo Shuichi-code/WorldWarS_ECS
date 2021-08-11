@@ -31,7 +31,6 @@ namespace Assets.Scripts.Systems
             var teamToMove = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>())
                 .GetSingleton<GameManagerComponent>().teamToMove;
             var delta = Time.DeltaTime;
-            var entityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
             var clockEntityArchetype = EntityManager.CreateArchetype(typeof(CountdownEventComponent));
 
             Entities.
@@ -41,7 +40,7 @@ namespace Assets.Scripts.Systems
                     if (timeComponent.TimeRemaining < 0f)
                     {
                         timeComponent.TimeRemaining = 0;
-                        ArbiterCheckingSystem.DeclareWinner(ecb, entityArchetype, GameManager.SwapTeam(team.myTeam));
+                        ArbiterCheckingSystem.DeclareWinner(ecb, GameManager.SwapTeam(team.myTeam));
                     }
                     else
                     {

@@ -130,7 +130,6 @@ namespace Assets.Scripts.Systems
             var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
             var gm = gmQuery.GetSingleton<GameManagerComponent>();
             var teamToMove = gm.teamToMove;
-            var chargedEventArchetype = EntityManager.CreateArchetype(typeof(ChargedAbilityEventComponent));
             var ecb = ecbSystem.CreateCommandBuffer();
 
             Entities.WithAll<ChargedAbilityTag,PlayerTag>().
@@ -140,13 +139,13 @@ namespace Assets.Scripts.Systems
                     {
                         if (HasComponent<ChargeEventFiredTag>(e)) return;
                         ecb.AddComponent(e, new ChargeEventFiredTag());
-                        BroadcastChargeAbilityEvent(ecb, chargedEventArchetype, true);
+                        BroadcastChargeAbilityEvent(ecb, true);
                     }
                     else
                     {
                         if (!HasComponent<ChargeEventFiredTag>(e)) return;
                         ecb.RemoveComponent<ChargeEventFiredTag>(e);
-                        BroadcastChargeAbilityEvent(ecb, chargedEventArchetype, false);
+                        BroadcastChargeAbilityEvent(ecb, false);
                     }
                 }).Schedule();
                 this.CompleteDependency();
@@ -165,10 +164,9 @@ namespace Assets.Scripts.Systems
             EntityManager.DestroyEntity(GetEntityQuery(typeof(ChargedAbilityEventComponent)));
         }
 
-        private static void BroadcastChargeAbilityEvent(EntityCommandBuffer ecb,
-            EntityArchetype chargedEventArchetype, bool setUIActive)
+        private static void BroadcastChargeAbilityEvent(EntityCommandBuffer ecb, bool setUIActive)
         {
-            var chargedEventEntity = ecb.CreateEntity( chargedEventArchetype);
+            var chargedEventEntity = ecb.CreateEntity();
             ecb.AddComponent(chargedEventEntity, new ChargedAbilityEventComponent() {activateUI = setUIActive});
         }
     }
