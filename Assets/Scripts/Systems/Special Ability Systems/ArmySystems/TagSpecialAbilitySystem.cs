@@ -1,13 +1,7 @@
-using System.Text.RegularExpressions;
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEditor.U2D.Path.GUIFramework;
-using UnityEngine;
 
 namespace Assets.Scripts.Systems.ArmySystems
 {

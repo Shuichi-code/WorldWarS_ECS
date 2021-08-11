@@ -2,7 +2,6 @@
 using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Systems;
 using Unity.Entities;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 

@@ -2,7 +2,6 @@ using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
 using System;
-using Assets.Scripts.Monobehaviours.Managers;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -45,7 +44,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             }
 
         }
-
         private void Blitzkrieg(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
             var roundedWorldPos = Location.GetRoundedMousePosition();
@@ -53,6 +51,17 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
             HighlightFiveStarGeneral(ecbParallelWriter);
             HighlightColumn(ecbParallelWriter);
+            //check if player pressed on the five star general
+            if (mouseButtonPressed)
+            {
+                Entities.
+                    WithAll<PlayerTag,PieceTag>().
+                    ForEach((Entity e, ref Translation) =>
+                {
+
+                }).ScheduleParallel();
+                ecbSystem.AddJobHandleForProducer(Dependency);
+            }
             SystemManager.SetPickupSystems(false);
 
             //RestoreNormalSystems();
@@ -60,42 +69,66 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
         private void HighlightColumn(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
-            var chargedFiveStarGeneralQuery = GetEntityQuery(ComponentType.ReadOnly<ChargedFiveStarGeneralTag>(), ComponentType.ChunkComponentReadOnly<PlayerTag>());
+            var chargedFiveStarGeneralQuery = GetEntityQuery(ComponentType.ReadOnly<ChargedFiveStarGeneralTag>(), ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<Translation>());
+            if (chargedFiveStarGeneralQuery.CalculateEntityCount() == 0) return;
             var chargedFiveStarGeneralTranslation = chargedFiveStarGeneralQuery.GetSingleton<Translation>();
 
-            var playerPiecesQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<PieceTag>(), typeof(Translation));
-            var playerPiecesArray = playerPiecesQuery.ToComponentDataArray<Translation>(Allocator.Temp);
+            var cellArrayPositions = new NativeArray<Translation>(3, Allocator.TempJob);
+            cellArrayPositions = SetPossibleValidLocation(cellArrayPositions, chargedFiveStarGeneralTranslation.Value);
 
-            var possibleValidLocationArray = SetPossibleValidLocation(chargedFiveStarGeneralTranslation.Value);
-
-            var foundPieceEntitiesArray = new NativeArray<Entity>(3,Allocator.TempJob);
-            foundPieceEntitiesArray = PopulateFoundPieceEntitiesArray(possibleValidLocationArray, foundPieceEntitiesArray);
+            var foundPieceEntitiesArray = new NativeArray<Entity>(3, Allocator.TempJob);
+            foundPieceEntitiesArray = PopulateFoundPieceEntitiesArray(cellArrayPositions, foundPieceEntitiesArray);
 
             var blitzFormation = GetBlitzFormation(foundPieceEntitiesArray);
-
             if (blitzFormation != BlitzkriegFormation.InvalidBlitz)
             {
+                var validPosition1 = new float3();
+                var validPosition2 = new float3();
                 //proceed with highlighting
                 switch (blitzFormation)
                 {
                     case BlitzkriegFormation.GeneralAtFront:
+                        //get at most two pieces behind the general and highlight them
+                        validPosition1 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y - 1, chargedFiveStarGeneralTranslation.Value.z);
+                        validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y - 2, chargedFiveStarGeneralTranslation.Value.z);
+
                         break;
                     case BlitzkriegFormation.GeneralInMiddle:
+                        validPosition1 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y + 1, chargedFiveStarGeneralTranslation.Value.z);
+                        validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y - 1, chargedFiveStarGeneralTranslation.Value.z);
                         break;
                     case BlitzkriegFormation.GeneralAtBack:
+                        validPosition1 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y + 1, chargedFiveStarGeneralTranslation.Value.z);
+                        validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
+                            chargedFiveStarGeneralTranslation.Value.y + 2, chargedFiveStarGeneralTranslation.Value.z);
                         break;
                     case BlitzkriegFormation.InvalidBlitz:
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+                HighlightSoldiersAroundGeneral(ecbParallelWriter, validPosition1, validPosition2);
             }
-            possibleValidLocationArray.Dispose();
             foundPieceEntitiesArray.Dispose();
-            //if there are no allies in front, highlight at most 2 allies behind the general
-            //if there is one ally in front and no ally at the next space, highlight front and back of General
-
-            //if there are 2 allies in front, check if there is ally 3 spaces in front of the general
+            cellArrayPositions.Dispose();
+        }
+        private void HighlightSoldiersAroundGeneral(EntityCommandBuffer.ParallelWriter ecbParallelWriter, float3 validPosition1,
+            float3 validPosition2)
+        {
+            Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
+            {
+                if (Location.IsMatchLocation(translation.Value, validPosition1) ||
+                    Location.IsMatchLocation(translation.Value, validPosition2))
+                {
+                    ecbParallelWriter.AddComponent<HighlightedTag>(entityInQueryIndex, e);
+                }
+            }).ScheduleParallel();
+            ecbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private BlitzkriegFormation GetBlitzFormation(NativeArray<Entity> foundPieceEntitiesArray)
@@ -111,37 +144,64 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             else if (foundPieceEntitiesArray[0] != Entity.Null && foundPieceEntitiesArray[1] != Entity.Null &&
                      foundPieceEntitiesArray[2] == Entity.Null)
             {
-                return BlitzkriegFormation.GeneralInMiddle;
+                return BlitzkriegFormation.GeneralAtBack;
             }
 
             return BlitzkriegFormation.InvalidBlitz;
         }
 
-        private NativeArray<Entity> PopulateFoundPieceEntitiesArray(NativeArray<float3> possibleValidLocationArray,
+        /// <summary>
+        /// Populates the entities array that indicates if there are pieces in front of the Five Star General, possibly blocking the blitz
+        /// </summary>
+        /// <param name="possibleValidLocationArray"></param>
+        /// <param name="foundPieceEntitiesArray"></param>
+        /// <returns></returns>
+        private NativeArray<Entity> PopulateFoundPieceEntitiesArray(NativeArray<Translation> possibleValidLocationArray,
             NativeArray<Entity> foundPieceEntitiesArray)
         {
+            SetEntityArrayToNull(foundPieceEntitiesArray);
+
+            //WARNING: This needs to be scheduled only so as to not create race condition due to the for loop inside the job.
             Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity e, in Translation translation) =>
             {
                 for (var index = 0; index < possibleValidLocationArray.Length; index++)
                 {
-                    var possibleValidLocation = possibleValidLocationArray[index];
+                    var possibleValidLocation = possibleValidLocationArray[index].Value;
                     if (Location.IsMatchLocation(possibleValidLocation, translation.Value))
                     {
                         foundPieceEntitiesArray[index] = e;
                     }
                 }
-            }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+
+            }).Schedule();
+            this.CompleteDependency();
             return foundPieceEntitiesArray;
         }
 
-        private static NativeArray<float3> SetPossibleValidLocation(float3 selectedCellTranslation)
+        private void SetEntityArrayToNull(NativeArray<Entity> foundPieceEntitiesArray)
         {
-            NativeArray<float3> cellArrayPositions = new NativeArray<float3>(3, Allocator.TempJob);
-            cellArrayPositions[0] = new float3(selectedCellTranslation.x, selectedCellTranslation.y + 1, selectedCellTranslation.z);
-            cellArrayPositions[1] = new float3(selectedCellTranslation.x, selectedCellTranslation.y + 2, selectedCellTranslation.z);
-            cellArrayPositions[2] = new float3(selectedCellTranslation.x, selectedCellTranslation.y+3, selectedCellTranslation.z);
-            return cellArrayPositions;
+            for (var index = 0; index < foundPieceEntitiesArray.Length; index++)
+            {
+                foundPieceEntitiesArray[index] = Entity.Null;
+            }
+        }
+
+        /// <summary>
+        /// Sets the Possible location of the pieces in front of the five star general
+        /// </summary>
+        /// <param name="cellPositionArray"></param>
+        /// <param name="fiveStarGeneralTranslation"></param>
+        /// <returns></returns>
+        private static NativeArray<Translation> SetPossibleValidLocation(NativeArray<Translation> cellPositionArray,float3 fiveStarGeneralTranslation)
+        {
+            for (var i = 0; i < cellPositionArray.Length; i++)
+            {
+                cellPositionArray[i] = new Translation()
+                {
+                    Value = new float3(fiveStarGeneralTranslation.x, fiveStarGeneralTranslation.y + (i+1), fiveStarGeneralTranslation.z)
+                };
+            }
+            return cellPositionArray;
         }
 
         private void HighlightFiveStarGeneral(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
@@ -153,6 +213,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                     if (rankComponent.Rank != Piece.FiveStarGeneral) return;
                     ecbParallelWriter.AddComponent<HighlightedTag>(entityInQueryIndex, e);
                     ecbParallelWriter.AddComponent<ChargedFiveStarGeneralTag>(entityInQueryIndex, e);
+                    ecbParallelWriter.AddComponent<BulletComponent>(entityInQueryIndex, e);
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(Dependency);
         }
