@@ -12,7 +12,9 @@ namespace Assets.Scripts.Systems
 {
     public class DragToMouseSystem : SystemBase
     {
-        EndSimulationEntityCommandBufferSystem ecbSystem;
+        private EndSimulationEntityCommandBufferSystem ecbSystem;
+        public delegate void GameWinnerDelegate(Team winningTeam);
+        public event GameWinnerDelegate OnGameWin;
 
         protected override void OnCreate()
         {
@@ -45,7 +47,7 @@ namespace Assets.Scripts.Systems
 
             Entities.
                 WithAll<SelectedTag>().
-                ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, ref PieceTag piece, ref OriginalLocationComponent originalLocation) =>
+                ForEach((Entity e, int entityInQueryIndex, ref Translation pieceTranslation, ref PieceTag piece, ref OriginalLocationComponent originalLocation, in TeamComponent teamComponent) =>
                 {
 
                     pieceTranslation.Value = math.lerp(pieceTranslation.Value, worldPosNormalized, speed);
@@ -60,14 +62,19 @@ namespace Assets.Scripts.Systems
 
                     if (IsValidMove(highlightedCellTranslation, enemyCellTranslation, pieceTranslation))
                     {
-                        ecb.RemoveComponent<PieceOnCellComponent>(originalCellEntity);
-                        if (newCellEntity != Entity.Null)
+                        if(Location.HasMatch(enemyCellTranslation, pieceTranslation))
                         {
-                            CreateArbiter(ecb, e, enemyPieceEntity, newCellEntity, originalCellEntity);
+                            ecb.AddComponent(e, new FighterTag());
+                            ecb.AddComponent(enemyPieceEntity, new FighterTag());
                         }
+
+                        var pieceOnCellUpdaterEntity = ecb.CreateEntity();
+                        ecb.AddComponent(pieceOnCellUpdaterEntity, new PieceOnCellUpdaterTag());
 
                         pieceTranslation.Value = math.round(pieceTranslation.Value);
                         originalLocation.originalLocation = pieceTranslation.Value;
+
+                        ChangeTurn(ecb, teamComponent);
                     }
                     else
                         pieceTranslation.Value = originalLocation.originalLocation;
@@ -82,6 +89,15 @@ namespace Assets.Scripts.Systems
             enemyCellTranslation.Dispose();
             enemyCellEntities.Dispose();
             cellEntities.Dispose();
+        }
+
+        private static void ChangeTurn(EntityCommandBuffer ecb, TeamComponent teamComponent)
+        {
+            var changeTurnEntity = ecb.CreateEntity();
+            ecb.AddComponent(changeTurnEntity, new ChangeTurnComponent()
+            {
+                currentTurnTeam = teamComponent.myTeam
+            });
         }
 
         private static void CreateArbiter(EntityCommandBuffer ecb, Entity e, Entity enemyPiece, Entity newCellEntity,
@@ -106,6 +122,17 @@ namespace Assets.Scripts.Systems
         private static bool IsValidMove(NativeArray<Translation> highlightedCellTranslation, NativeArray<Translation> enemyCellTranslation, Translation pieceTranslation)
         {
             return Location.HasMatch(enemyCellTranslation, pieceTranslation) || Location.HasMatch(highlightedCellTranslation, pieceTranslation);
+        }
+
+        private void CheckIfGameFinishedEventRaised(EntityCommandBuffer ecb)
+        {
+            Entities
+                .ForEach((Entity e, in GameFinishedEventComponent eventComponent) =>
+                {
+                    OnGameWin?.Invoke(eventComponent.winningTeam);
+                })
+                .WithoutBurst().Run();
+            EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
         }
     }
 }

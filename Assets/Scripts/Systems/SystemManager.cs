@@ -36,7 +36,7 @@ namespace Assets.Scripts.Systems
             SetSystemStatus<HighlightCellSystem>(enabled);
             SetSystemStatus<PickUpSystem>(enabled);
             SetSystemStatus<RemoveTagsSystem>(enabled);
-            SetSystemStatus<TurnSystem>(enabled);
+            SetSystemStatus<PlayablePiecesSystem>(enabled);
             SetSystemStatus<CountdownSystem>(enabled);
         }
 

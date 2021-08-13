@@ -8,6 +8,7 @@ namespace Assets.Scripts.Systems
 {
     [UpdateBefore(typeof(RemoveTagsSystem))]
     [UpdateAfter(typeof(DragToMouseSystem))]
+    [DisableAutoCreation]
     public class ArbiterCheckingSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
@@ -77,7 +78,7 @@ namespace Assets.Scripts.Systems
                                 break;
 
                             case FightResult.NoFight:
-                                Debug.Log("No fight has occured.");
+                                Debug.Log("No fight has occurred.");
                                 break;
                             default:
                                 Debug.Log("Switch turned to default!");

@@ -100,7 +100,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         /// <param name="i"></param>
         /// <param name="piecePosition"></param>
         /// <param name="pieceArray"></param>
-        public void SetPiecesOnCellsAsReference(int i, float3 piecePosition, NativeArray<Entity> pieceArray)
+        public void SetPiecesOnCellsAsReference(int i, float3 piecePosition, NativeArray<Entity> pieceArray, Team pieceTeam, int pieceRank)
         {
             for (int j = 0; j < cellPositionArray.Length; j++)
             {
@@ -110,7 +110,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
                 entityManager.SetComponentData(boardArray[j],
                     new PieceOnCellComponent
                     {
-                        PieceEntity = pieceArray[i]
+                        PieceEntity = pieceArray[i],
+                        PieceRank = pieceRank,
+                        PieceTeam = pieceTeam
                     }
                 );
             }

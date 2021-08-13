@@ -61,11 +61,12 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var spearTipQuery = GetEntityQuery(ComponentType.ReadOnly<SpearTipTag>(),
                 ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
             if (spearTipQuery.CalculateEntityCount() == 0) return;
-            //check if any enemy pieces have the same location as the speartip
+
             CheckIfBatallionIsInBattle(ecbParallelWriter, spearTipQuery);
-            UpdatePieceOnCellComponents(ecbParallelWriter);
-            RemoveNaziTags(ecbParallelWriter);
-            ChangeTurn(chargedFiveStarQuery);
+
+            RemoveNaziSpecialAbilityTags(ecbParallelWriter);
+            var chargedFiveStarTeam = chargedFiveStarQuery.GetSingleton<TeamComponent>().myTeam;
+            ChangeTurn(chargedFiveStarTeam);
             RestoreNormalSystems();
         }
 
@@ -119,7 +120,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             ecbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private void RemoveNaziTags(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void RemoveNaziSpecialAbilityTags(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
             Entities.
                 WithAny<SpearTipTag, ChargedFiveStarGeneralTag>().
@@ -342,11 +343,14 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var spyQuery = GetHighlightedPieceQuery<PlayerTag>();
             var targetQuery = GetHighlightedPieceQuery<EnemyTag>();
             var spyEntity = spyQuery.GetSingletonEntity();
+            var spyTeam = spyQuery.GetSingleton<TeamComponent>().myTeam;
             var targetEntity = targetQuery.GetSingletonEntity();
             var targetRank = targetQuery.GetSingleton<RankComponent>().Rank;
             var playerQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
                 ComponentType.ReadOnly<TimeComponent>(), ComponentType.ReadOnly<TeamComponent>());
 
+            EntityManager.AddComponent<FighterTag>(spyEntity);
+            EntityManager.AddComponent<FighterTag>(targetEntity);
             var fightResult = FightCalculator.DetermineFightResult(Piece.Spy, targetRank);
             switch (fightResult)
             {
@@ -381,7 +385,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             CheckBullets<PlayerTag>();
 
             RestoreNormalSystems();
-            ChangeTurn(spyQuery);
+            ChangeTurn(spyTeam);
         }
 
         /// <summary>
@@ -405,10 +409,14 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             EntityManager.RemoveComponent<ChargedAbilityTag>(playerEntity);
         }
 
-        private static void ChangeTurn(EntityQuery singletonQuery)
+        private void ChangeTurn(Team currentTurnTeam)
         {
-            var spyTeam = singletonQuery.GetSingleton<TeamComponent>().myTeam;
-            ArbiterCheckingSystem.ChangeTurn(spyTeam);
+            var changeTurnEntity = EntityManager.CreateEntity();
+            EntityManager.AddComponent<ChangeTurnComponent>(changeTurnEntity);
+            EntityManager.SetComponentData(changeTurnEntity, new ChangeTurnComponent()
+            {
+                currentTurnTeam = currentTurnTeam
+            });
         }
 
         private void RestoreNormalSystems()

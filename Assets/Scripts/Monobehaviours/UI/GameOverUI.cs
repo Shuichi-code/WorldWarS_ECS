@@ -33,7 +33,7 @@ namespace Assets.Scripts.Monobehaviours
 
         private void Start()
         {
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<ArbiterCheckingSystem>().OnGameWin += GameOverUI_OnGameWin;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<DeclareWInnerSystem>().OnGameWin += GameOverUI_OnGameWin;
             gameOverUI.SetActive(false);
             gameManager = GameManager.GetInstance();
         }

@@ -21,6 +21,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private float startingXCoordinate;
         private float startingYCoordinate;
         private GameManager gameManager;
+        private BoardManager boardManager;
         private const float PlayerPieceStartingXCoordinate = -4f;
         private const float PlayerPieceStartingYCoordinate = -2f;
         private const float EnemyPieceStartingXCoordinate = 4f;
@@ -40,6 +41,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         void Start()
         {
             gameManager = GameManager.GetInstance();
+            boardManager = BoardManager.GetInstance();
         }
 
         public void CreatePlayerPieces(FixedString32 chosenOpening, Team team, Army army, bool isPlayer = true)
@@ -69,16 +71,15 @@ namespace Assets.Scripts.Monobehaviours.Managers
                     entityManager.SetComponentData(pieceEntity, new OriginalLocationComponent() { originalLocation = pieceLocation });
                     entityManager.SetComponentData(pieceEntity, new ArmyComponent() {army = army});
 
-                    BoardManager.GetInstance().SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray);
+
+                    boardManager.SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray, team, pieceRank);
                     pieceEntityIndex++;
                 }
 
                 xIndex++;
-                if (xIndex == 9 && yIndex < 2)
-                {
-                    yIndex++;
-                    xIndex = 0;
-                }
+                if (xIndex != 9 || yIndex >= 2) continue;
+                yIndex++;
+                xIndex = 0;
             }
         }
 

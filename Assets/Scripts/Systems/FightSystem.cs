@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public class FightSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
@@ -22,9 +21,8 @@ namespace Assets.Scripts.Systems
 
         protected override void OnUpdate()
         {
-            var fighterQuery = GetEntityQuery(ComponentType.ReadOnly<FighterTag>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
+            var fighterQuery = GetEntityQuery(ComponentType.ReadOnly<FighterTag>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>(), ComponentType.ReadOnly<ArmyComponent>());
             if (fighterQuery.CalculateEntityCount() != 2) return;
-            var ecb = ecbSystem.CreateCommandBuffer();
             var ecbParallelWriter = ecbSystem.CreateCommandBuffer().AsParallelWriter();
             var fighterRankArray = fighterQuery.ToComponentDataArray<RankComponent>(Allocator.TempJob);
             var fighterTeamArray = fighterQuery.ToComponentDataArray<TeamComponent>(Allocator.TempJob);
@@ -49,11 +47,11 @@ namespace Assets.Scripts.Systems
                     break;
                 case FightResult.BothLose:
                     loserEntityArray[0] = defendingFighterEntity;
-                    loserEntityArray[0] = attackingFighterEntity;
+                    loserEntityArray[1] = attackingFighterEntity;
                     break;
                 case FightResult.FlagDestroyed:
                     var teamWinner = (defendingFighterRank.Rank == Piece.Flag ? attackingFighterTeam.myTeam : defendingFighterTeam.myTeam);
-                    ArbiterCheckingSystem.DeclareWinner(ecb, teamWinner);
+                    DeclareWinner(teamWinner);
                     break;
                 case FightResult.NoFight:
                     break;
@@ -68,6 +66,17 @@ namespace Assets.Scripts.Systems
             fighterEntityArray.Dispose();
             loserEntityArray.Dispose();
             RemoveFighterTags(ecbParallelWriter);
+        }
+
+        private void DeclareWinner(Team teamWinner)
+        {
+            var declareWinnerEntity = EntityManager.CreateEntity();
+            EntityManager.AddComponent<GameFinishedEventComponent>(declareWinnerEntity);
+            EntityManager.SetComponentData(declareWinnerEntity, new GameFinishedEventComponent()
+            {
+                winningTeam = teamWinner
+            });
+
         }
 
         private void CaptureLosers(NativeArray<Entity> loserEntityArray)
