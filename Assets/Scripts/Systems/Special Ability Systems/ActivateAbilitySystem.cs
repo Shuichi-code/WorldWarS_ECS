@@ -47,15 +47,22 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         {
             var roundedWorldPos = Location.GetRoundedMousePosition();
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
+
             SystemManager.SetPickupSystems(false);
-            HighlightFiveStarGeneral(ecbParallelWriter);
-            HighlightBatallion(ecbParallelWriter);
+            var highlightedQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>());
+            if (highlightedQuery.CalculateEntityCount() == 0)
+            {
+                HighlightFiveStarGeneral(ecbParallelWriter);
+                HighlightBatallion(ecbParallelWriter);
+            }
+
             //check if player pressed on the five star general
             if (!mouseButtonPressed) return;
             var chargedFiveStarQuery = GetEntityQuery(ComponentType.ReadOnly<ChargedFiveStarGeneralTag>(),
                 ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<TeamComponent>());
             if (chargedFiveStarQuery.CalculateEntityCount() == 0) return;
             var chargedFiveStarTranslation = chargedFiveStarQuery.GetSingleton<Translation>();
+            var chargedFiveStarTeam = chargedFiveStarQuery.GetSingleton<TeamComponent>().myTeam;
             if (!Location.IsMatchLocation(chargedFiveStarTranslation.Value, roundedWorldPos)) return;
             ChargeBatallion(ecbParallelWriter);
             var spearTipQuery = GetEntityQuery(ComponentType.ReadOnly<SpearTipTag>(),
@@ -63,10 +70,10 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             if (spearTipQuery.CalculateEntityCount() == 0) return;
 
             CheckIfBatallionIsInBattle(ecbParallelWriter, spearTipQuery);
-
-            RemoveNaziSpecialAbilityTags(ecbParallelWriter);
-            var chargedFiveStarTeam = chargedFiveStarQuery.GetSingleton<TeamComponent>().myTeam;
+            var updatePieceEntity = EntityManager.CreateEntity();
+            EntityManager.AddComponentData(updatePieceEntity, new PieceOnCellUpdaterTag());
             ChangeTurn(chargedFiveStarTeam);
+            RemoveNaziSpecialAbilityTags(ecbParallelWriter);
             RestoreNormalSystems();
         }
 
@@ -74,10 +81,13 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         {
             var spearTipLocation = spearTipQuery.GetSingleton<Translation>().Value;
             var spearTipEntity = spearTipQuery.GetSingletonEntity();
-            Entities.WithAll<PieceTag, EnemyTag>()
-                .ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
+            Entities.
+                WithAll<PieceTag, EnemyTag>().
+                WithNone<PrisonerTag>().
+                ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
                 {
                     if (!Location.IsMatchLocation(spearTipLocation, translation.Value)) return;
+                    Debug.Log("Commencing Battle!");
                     ecbParallelWriter.AddComponent(entityInQueryIndex, e, new FighterTag());
                     ecbParallelWriter.AddComponent(entityInQueryIndex, spearTipEntity, new FighterTag());
                 }).ScheduleParallel();
@@ -144,7 +154,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 .ForEach((Entity e, int entityInQueryIndex, ref Translation translation) =>
                 {
                     translation.Value.y++;
-                    ecbParallelWriter.SetComponent(entityInQueryIndex,e, new OriginalLocationComponent()
+                    ecbParallelWriter.SetComponent(entityInQueryIndex, e, new OriginalLocationComponent()
                     {
                         originalLocation = translation.Value
                     });
@@ -180,7 +190,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                         validPosition1.Value = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y - 1,
                             chargedFiveStarGeneralTranslation.Value.z);
-                        if(Location.HasMatch(playerPiecesArray, validPosition1))
+                        if (Location.HasMatch(playerPiecesArray, validPosition1))
                             validPosition2 = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y - 2, chargedFiveStarGeneralTranslation.Value.z);
                         isGeneralAtFront = true;
@@ -216,7 +226,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 WithAll<ChargedFiveStarGeneralTag, PlayerTag>().
                 ForEach((Entity e, int entityInQueryIndex) =>
                 {
-                    ecbParallelWriter.AddComponent(entityInQueryIndex,e, new SpearTipTag());
+                    ecbParallelWriter.AddComponent(entityInQueryIndex, e, new SpearTipTag());
                 }).ScheduleParallel();
             ecbSystem.AddJobHandleForProducer(Dependency);
         }
@@ -230,9 +240,9 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 if (!Location.IsMatchLocation(translation.Value, validPosition1) &&
                     !Location.IsMatchLocation(translation.Value, validPosition2)) return;
                 ecbParallelWriter.AddComponent<HighlightedTag>(entityInQueryIndex, e);
-                if (Location.IsMatchLocation(translation.Value, validPosition1) && !isGeneralAtFront ||
-                    (isGeneralAtFront && HasComponent<ChargedFiveStarGeneralTag>(e)))
+                if (Location.IsMatchLocation(translation.Value, validPosition1) && !isGeneralAtFront || (isGeneralAtFront && HasComponent<ChargedFiveStarGeneralTag>(e)))
                 {
+                    Debug.Log("Adding SpearTipTag");
                     ecbParallelWriter.AddComponent<SpearTipTag>(entityInQueryIndex, e);
                 }
             }).ScheduleParallel();

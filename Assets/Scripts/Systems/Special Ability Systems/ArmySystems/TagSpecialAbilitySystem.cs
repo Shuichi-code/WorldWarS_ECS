@@ -1,9 +1,10 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
+using Unity.Collections;
 using Unity.Entities;
 
-namespace Assets.Scripts.Systems.ArmySystems
+namespace Assets.Scripts.Systems.Special_Ability_Systems.ArmySystems
 {
     public class TagSpecialAbilitySystem : SystemBase
     {
@@ -19,16 +20,52 @@ namespace Assets.Scripts.Systems.ArmySystems
         protected override void OnUpdate()
         {
             var ecb = ecbSystem.CreateCommandBuffer();
+            var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
             var playerEntity = GetPlayerEntity<PlayerTag>();
             var enemyEntity = GetPlayerEntity<EnemyTag>();
+
+            RemoveSpecialAbilityForNazi(playerEntity, enemyEntity);
 
             if (HasComponent<ChargedAbilityTag>(playerEntity) && HasComponent<ChargedAbilityTag>(enemyEntity)) return;
 
             TagPlayerWithSpecialAbilityForNazi(ecb, playerEntity, enemyEntity);
 
+
             var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
             if (entities.CalculateEntityCount() == 0) return;
             TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
+        }
+
+        private void RemoveSpecialAbilityForNazi(Entity playerEntity, Entity enemyEntity)
+        {
+            //if player's five star general has prisoner, remove player's charged ability
+            if (CheckFiveStar<PlayerTag>())
+            {
+                EntityManager.RemoveComponent<ChargedAbilityTag>(playerEntity);
+            }
+            else if (CheckFiveStar<EnemyTag>())
+            {
+                EntityManager.RemoveComponent<ChargedAbilityTag>(enemyEntity);
+            }
+
+        }
+
+        private bool CheckFiveStar<T>()
+        {
+            var playerPiecesQuery = GetEntityQuery(ComponentType.ReadOnly<T>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<PieceTag>());
+            var playerPieceRankArray = playerPiecesQuery.ToComponentDataArray<RankComponent>(Allocator.Temp);
+            var playerPieceEntityArray = playerPiecesQuery.ToEntityArray(Allocator.Temp);
+
+            for (var index = 0; index < playerPieceRankArray.Length; index++)
+            {
+                var rankComponent = playerPieceRankArray[index].Rank;
+                if (rankComponent == Piece.FiveStarGeneral && HasComponent<PrisonerTag>(playerPieceEntityArray[index]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void TagPlayerWithSpecialAbilityForNazi(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)

@@ -23,12 +23,14 @@ namespace Assets.Scripts.Monobehaviours
         private GameObject ArmySelectUI;
         private GameManager gameManager;
         private GameObject initializingUi;
+        private GameObject chargedAbilityUI;
 
         void Awake()
         {
             initializingUi = GameObject.Find(GameConstants.InitializingUIName);
             gameOverlayUi = GameObject.Find(GameConstants.GameoverlayUIName);
             ArmySelectUI = GameObject.Find(GameConstants.ArmySelectUIName);
+            chargedAbilityUI = GameObject.Find(GameConstants.ChargedAbilityUIName);
         }
 
         private void Start()
@@ -42,10 +44,10 @@ namespace Assets.Scripts.Monobehaviours
         {
 
             gameOverUI.SetActive(true);
-
             gameManager.SetGameState(GameState.Dead);
             gameManager.SetSystemsEnabled(false);
-
+            SystemManager.SetSystemStatus<ChargeAbilitySystem>(false);
+            chargedAbilityUI.SetActive(false);
             //activate the canvas and print the winner
             winnerLabel.text = winnerLabel != null ? (winningTeam == Team.Invader ? "Invader" : "Defender") : "WinnerLabel is null.";
         }

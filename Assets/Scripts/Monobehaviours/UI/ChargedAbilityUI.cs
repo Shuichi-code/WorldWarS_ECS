@@ -2,7 +2,6 @@ using System;
 using System.Net.Mime;
 using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Systems;
-using Assets.Scripts.Systems.ArmySystems;
 using Assets.Scripts.Systems.Special_Ability_Systems;
 using Unity.Entities;
 using UnityEngine;

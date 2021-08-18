@@ -76,7 +76,6 @@ namespace Assets.Scripts.Systems
             {
                 winningTeam = teamWinner
             });
-
         }
 
         private void CaptureLosers(NativeArray<Entity> loserEntityArray)

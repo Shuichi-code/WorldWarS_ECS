@@ -1,5 +1,5 @@
 ﻿using Assets.Scripts.Monobehaviours.Managers;
-using Assets.Scripts.Systems.ArmySystems;
+using Assets.Scripts.Systems.Special_Ability_Systems.ArmySystems;
 using Unity.Entities;
 using UnityEngine;
 
@@ -8,7 +8,7 @@ namespace Assets.Scripts.Systems
     public class SystemManager : MonoBehaviour
     {
         public GameManager GameManager { get; set; }
-        void OnEnable()
+        private void OnEnable()
         {
             GameManager = GameManager.GetInstance();
             GameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
@@ -19,6 +19,11 @@ namespace Assets.Scripts.Systems
         public static void SetSystemStatus<T>(bool enabled) where T : SystemBase
         {
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<T>().Enabled = enabled;
+        }
+
+        public static bool GetSystemStatus<T>() where T : SystemBase
+        {
+            return World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<T>().Enabled;
         }
 
         public static void SetSpecialAbilitySystems(bool enabled)
@@ -44,6 +49,12 @@ namespace Assets.Scripts.Systems
         {
             SetSystemStatus<RemoveTagsSystem>(enabled);
             SetSystemStatus<PickUpSystem>(enabled);
+        }
+
+        public static bool GetPickupSystems()
+        {
+            Debug.Log((GetSystemStatus<RemoveTagsSystem>().ToString()));
+            return (GetSystemStatus<RemoveTagsSystem>() && GetSystemStatus<PickUpSystem>());
         }
     }
 }
