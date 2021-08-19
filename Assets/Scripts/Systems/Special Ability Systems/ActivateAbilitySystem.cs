@@ -134,7 +134,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         private void HighlightBatallion(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
             var chargedFiveStarGeneralQuery = GetEntityQuery(ComponentType.ReadOnly<ChargedFiveStarGeneralTag>(), ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<Translation>());
-            Debug.Log("ChargedFiveStarQueryCount: " + chargedFiveStarGeneralQuery.CalculateEntityCount());
             if (chargedFiveStarGeneralQuery.CalculateEntityCount() == 0) return;
             var chargedFiveStarGeneralTranslation = chargedFiveStarGeneralQuery.GetSingleton<Translation>();
 
@@ -145,7 +144,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             foundPieceEntitiesArray = PopulateFoundPieceEntitiesArray(cellArrayPositions, foundPieceEntitiesArray);
 
             var blitzFormation = GetBlitzFormation(foundPieceEntitiesArray);
-            Debug.Log(blitzFormation.ToString());
             if (blitzFormation != BlitzkriegFormation.InvalidBlitz)
             {
                 var frontUnitPosition = new Translation();
@@ -206,7 +204,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             float3 validPosition1,
             float3 validPosition2, bool isGeneralAtFront = false)
         {
-            Debug.Log(isGeneralAtFront.ToString());
             Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
             {
                 //if (!Location.IsMatchLocation(translation.Value, validPosition1) &&
@@ -220,7 +217,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
                 if ((Location.IsMatchLocation(translation.Value, validPosition1) && !isGeneralAtFront) || (isGeneralAtFront && HasComponent<ChargedFiveStarGeneralTag>(e)))
                 {
-                    Debug.Log("Adding SpearTipTag");
                     ecbParallelWriter.AddComponent<SpearTipTag>(entityInQueryIndex, e);
                 }
             }).ScheduleParallel();

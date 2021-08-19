@@ -16,7 +16,7 @@ namespace Assets.Scripts.Systems
         {
             var fighterQuery = GetEntityQuery(ComponentType.ReadOnly<FighterTag>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>(), ComponentType.ReadOnly<ArmyComponent>());
             if (fighterQuery.CalculateEntityCount() != 2) return;
-            var ecbParallelWriter = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
             var fighterRankArray = GetComponentDataFromEntity<RankComponent>();
             var fighterTeamArray = GetComponentDataFromEntity<TeamComponent>();
             var fighterEntityArray = fighterQuery.ToEntityArray(Allocator.Temp);
@@ -54,7 +54,7 @@ namespace Assets.Scripts.Systems
             }
 
             CaptureLosers(loserEntityArray);
-            RemoveFighterTags(ecbParallelWriter);
+            RemoveFighterTags(ecb);
         }
 
         private void DeclareWinner(Team teamWinner)
@@ -75,15 +75,16 @@ namespace Assets.Scripts.Systems
             }
         }
 
-        private void RemoveFighterTags(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void RemoveFighterTags(EntityCommandBuffer ecb)
         {
             Entities.
                 WithAll<FighterTag>().
                 ForEach((Entity e, int entityInQueryIndex) =>
             {
-                ecbParallelWriter.RemoveComponent<FighterTag>(entityInQueryIndex, e);
-            }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                ecb.RemoveComponent<FighterTag>(e);
+            }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }

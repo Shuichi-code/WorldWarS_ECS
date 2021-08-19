@@ -17,8 +17,8 @@ namespace Assets.Scripts.Systems
             #region Initializing Data
             var mousePos = Input.mousePosition;
             var worldPos = (float3)Camera.main.ScreenToWorldPoint(mousePos);
-            float3 worldPosNormalized = new float3(worldPos.x, worldPos.y, GameConstants.PieceZ);
-            float speed = 1;
+            var worldPosNormalized = new float3(worldPos.x, worldPos.y, GameConstants.PieceZ);
+            const int speed = 1;
 
             bool mouseButtonHeld = Input.GetKey(KeyCode.Mouse0);
             var cellQuery = GetEntityQuery(ComponentType.ReadOnly<CellTag>(), ComponentType.ReadOnly<Translation>());
@@ -30,6 +30,7 @@ namespace Assets.Scripts.Systems
             NativeArray<Translation> enemyCellTranslationArray = enemyCellQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
             NativeArray<Entity> cellEntities = cellQuery.ToEntityArray(Allocator.TempJob);
             NativeArray<Entity> enemyCellEntities = enemyCellQuery.ToEntityArray(Allocator.TempJob);
+            var pieceOnCellComponentArray = GetComponentDataFromEntity<PieceOnCellComponent>();
             #endregion
             //WARNING! This job needs to be run only on Schedule() to prevent race condition
             Entities.
@@ -41,14 +42,16 @@ namespace Assets.Scripts.Systems
 
                     //this is the code for when the user has dropped the piece
                     if (mouseButtonHeld) return;
-
                     if (IsValidMove(highlightedCellTranslationArray, enemyCellTranslationArray, pieceTranslation))
                     {
-                        if(Location.HasMatch(enemyCellTranslationArray, pieceTranslation))
-                        {
-                            ecbParallel.AddComponent(entityInQueryIndex,e , new FighterTag());
-                            ecbParallel.AddComponent(entityInQueryIndex,e, new FighterTag());
-                        }
+                        //if(Location.HasMatch(enemyCellTranslationArray, pieceTranslation))
+                        //{
+                        //    Debug.Log("Found battle!");
+                        //    var enemyCellEntity = Location.GetMatchedEntity(enemyCellEntities, enemyCellTranslationArray, pieceTranslation.Value);
+                        //    var enemyEntity = pieceOnCellComponentArray[enemyCellEntity].PieceEntity;
+                        //    ecbParallel.AddComponent(entityInQueryIndex,e , new FighterTag());
+                        //    ecbParallel.AddComponent(entityInQueryIndex,enemyEntity, new FighterTag());
+                        //}
 
                         pieceTranslation.Value = math.round(pieceTranslation.Value);
                         originalLocation.originalLocation = pieceTranslation.Value;

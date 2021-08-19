@@ -7,6 +7,7 @@ using Unity.Transforms;
 
 namespace Assets.Scripts.Systems
 {
+    [UpdateAfter(typeof(FightSystem))]
     /// <summary>
     /// System responsible for updating the pieceoncell component after every fight/move.
     /// </summary>
@@ -17,25 +18,26 @@ namespace Assets.Scripts.Systems
             var pieceOnCellUpdateQuery = GetEntityQuery(ComponentType.ReadOnly<PieceOnCellUpdaterTag>());
             if (pieceOnCellUpdateQuery.CalculateEntityCount() == 0) return;
 
-            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
-            UpdatePieceOnCellComponents(ecbParallel);
-            DeletePieceOnCellUpdaterEntity(ecbParallel);
+            var ecb = EcbSystem.CreateCommandBuffer();
+            UpdatePieceOnCellComponents(ecb);
+            DeletePieceOnCellUpdaterEntity(ecb);
         }
 
-        private void DeletePieceOnCellUpdaterEntity(EntityCommandBuffer.ParallelWriter ecbParallel)
+        private void DeletePieceOnCellUpdaterEntity(EntityCommandBuffer ecb)
         {
             Entities.
                 WithAll<PieceOnCellUpdaterTag>().
                 ForEach((Entity e, int entityInQueryIndex) =>
                 {
-                    ecbParallel.DestroyEntity(entityInQueryIndex, e);
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                    ecb.DestroyEntity(e);
+                }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private void UpdatePieceOnCellComponents(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void UpdatePieceOnCellComponents(EntityCommandBuffer ecb)
         {
-            RemoveAllPieceOnCellComponents(ecbParallelWriter);
+            RemoveAllPieceOnCellComponents(ecb);
 
             var pieceEntitiesQuery = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
             var pieceTranslationArray = pieceEntitiesQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
@@ -49,7 +51,7 @@ namespace Assets.Scripts.Systems
                 {
                     if (Location.IsMatchLocation(pieceTranslation.Value, cellTranslation.Value))
                     {
-                        ecbParallelWriter.AddComponent(entityInQueryIndex, cellEntity,
+                        ecb.AddComponent( cellEntity,
                             new PieceOnCellComponent()
                             {
                                 PieceEntity = piecesEntityArray[index],
@@ -66,14 +68,15 @@ namespace Assets.Scripts.Systems
             piecesTeamArray.Dispose();
         }
 
-        private void RemoveAllPieceOnCellComponents(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void RemoveAllPieceOnCellComponents(EntityCommandBuffer ecb)
         {
             Entities.WithAll<PieceOnCellComponent>()
                 .ForEach((Entity e, int entityInQueryIndex) =>
                 {
-                    ecbParallelWriter.RemoveComponent<PieceOnCellComponent>(entityInQueryIndex, e);
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                    ecb.RemoveComponent<PieceOnCellComponent>(e);
+                }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }

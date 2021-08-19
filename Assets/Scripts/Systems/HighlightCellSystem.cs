@@ -19,6 +19,7 @@ public class HighlightCellSystem : ParallelSystem
         var selectedPieceTranslation = pieceQuery.GetSingleton<OriginalLocationComponent>().originalLocation;
         var selectedPieceTeam = pieceQuery.GetSingleton<TeamComponent>().myTeam;
 
+
         var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
 
         Entities
@@ -36,7 +37,9 @@ public class HighlightCellSystem : ParallelSystem
                             Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, e);
                         else
                         {
-                            var cellPieceTeam = GetComponent<TeamComponent>(GetComponent<PieceOnCellComponent>(e).PieceEntity).myTeam;
+                            var pieceOnCellArray = GetComponentDataFromEntity<PieceOnCellComponent>(true);
+                            var teamArray = GetComponentDataFromEntity<TeamComponent>(true);
+                            var cellPieceTeam = teamArray[pieceOnCellArray[e].PieceEntity].myTeam;
                             if (selectedPieceTeam != cellPieceTeam)
                                 Tag.AddTag<EnemyCellTag>(ecb, entityInQueryIndex, e);
                         }
@@ -44,8 +47,9 @@ public class HighlightCellSystem : ParallelSystem
                     i++;
                 }
                 cellArrayPositions.Dispose();
-            }).ScheduleParallel();
-        EcbSystem.AddJobHandleForProducer(Dependency);
+            }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
     }
 
     private static NativeArray<float3> SetPossibleValidMoves(float3 selectedCellTranslation, NativeArray<float3> cellArrayPositions)
