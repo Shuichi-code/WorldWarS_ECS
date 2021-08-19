@@ -8,17 +8,8 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    public class SpecialAbilitySystem : SystemBase
+    public class SpecialAbilitySystem : ParallelSystem
     {
-        private EntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            // Find the ECB system once and store it for later usage
-            base.OnCreate();
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
         protected override void OnUpdate()
         {
             #region initializingdata
@@ -37,7 +28,7 @@ namespace Assets.Scripts.Systems
 
         private EntityCommandBuffer.ParallelWriter GetEcbParallelWriter()
         {
-            return ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            return EcbSystem.CreateCommandBuffer().AsParallelWriter();
         }
 
         private void ApplySpecialAbilityToArmy(NativeArray<ArmyComponent> armyArray, NativeArray<Entity> specialEntityArray)
@@ -83,7 +74,7 @@ namespace Assets.Scripts.Systems
         {
             Entities.WithAll<SpecialAbilityComponent>()
                 .ForEach((Entity e, int entityInQueryIndex) => { ecb.RemoveComponent<SpecialAbilityComponent>(entityInQueryIndex, e); }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private void AddBulletToSpy<T>(Entity playerEntity)
@@ -111,63 +102,6 @@ namespace Assets.Scripts.Systems
                 ComponentType.ReadOnly<TeamComponent>(),
                 ComponentType.ReadOnly<PieceTag>(),
                 ComponentType.ReadOnly<T>());
-        }
-    }
-
-    public class ChargeAbilitySystem : SystemBase
-    {
-        public delegate void ChargeAbilityActivateDelegate(bool activateUI);
-        public event ChargeAbilityActivateDelegate ChargedAbilityActiveEvent;
-        private EntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
-        protected override void OnUpdate()
-        {
-            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
-            var gm = gmQuery.GetSingleton<GameManagerComponent>();
-            var teamToMove = gm.teamToMove;
-            var ecb = ecbSystem.CreateCommandBuffer();
-
-            Entities.WithAll<ChargedAbilityTag,PlayerTag>().
-                ForEach((Entity e, in TeamComponent teamComponent) =>
-                {
-                    if (teamToMove == teamComponent.myTeam )
-                    {
-                        if (HasComponent<ChargeEventFiredTag>(e)) return;
-                        ecb.AddComponent(e, new ChargeEventFiredTag());
-                        BroadcastChargeAbilityEvent(ecb, true);
-                    }
-                    else
-                    {
-                        if (!HasComponent<ChargeEventFiredTag>(e)) return;
-                        ecb.RemoveComponent<ChargeEventFiredTag>(e);
-                        BroadcastChargeAbilityEvent(ecb, false);
-                    }
-                }).Schedule();
-                this.CompleteDependency();
-
-            InvokeChargeAbilityEventIfAvailable();
-        }
-
-        private void InvokeChargeAbilityEventIfAvailable()
-        {
-            Entities
-                .ForEach((Entity e, in ChargedAbilityEventComponent eventComponent) =>
-                {
-                    ChargedAbilityActiveEvent?.Invoke(eventComponent.activateUI);
-                })
-                .WithoutBurst().Run();
-            EntityManager.DestroyEntity(GetEntityQuery(typeof(ChargedAbilityEventComponent)));
-        }
-
-        private static void BroadcastChargeAbilityEvent(EntityCommandBuffer ecb, bool setUIActive)
-        {
-            var chargedEventEntity = ecb.CreateEntity();
-            ecb.AddComponent(chargedEventEntity, new ChargedAbilityEventComponent() {activateUI = setUIActive});
         }
     }
 }

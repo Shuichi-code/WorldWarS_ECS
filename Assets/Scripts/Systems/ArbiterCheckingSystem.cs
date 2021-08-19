@@ -6,8 +6,6 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    [UpdateBefore(typeof(RemoveTagsSystem))]
-    [UpdateAfter(typeof(DragToMouseSystem))]
     [DisableAutoCreation]
     public class ArbiterCheckingSystem : SystemBase
     {

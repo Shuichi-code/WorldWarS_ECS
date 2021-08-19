@@ -8,20 +8,11 @@ using Unity.Transforms;
 
 namespace Assets.Scripts.Systems
 {
-    public class CapturedSystem : SystemBase
+    public class CapturedSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            // Find the ECB system once and store it for later usage
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
         protected override void OnUpdate()
         {
-            var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
 
             Entities
                 .WithAll<CapturedComponent>()
@@ -31,7 +22,7 @@ namespace Assets.Scripts.Systems
                     ecb.RemoveComponent<CapturedComponent>(entityInQueryIndex, e);
                     ecb.AddComponent<PrisonerTag>(entityInQueryIndex, e);
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
+            EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

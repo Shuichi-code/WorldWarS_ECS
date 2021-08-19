@@ -5,20 +5,14 @@ using Unity.Entities;
 
 namespace Assets.Scripts.Systems
 {
-    public class ChangeTurnSystem : SystemBase
+    public class ChangeTurnSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
         protected override void OnUpdate()
         {
             var changeTurnQuery = GetEntityQuery(ComponentType.ReadOnly <ChangeTurnComponent>());
             if (changeTurnQuery.CalculateEntityCount() == 0) return;
             var currentTurnTeam = changeTurnQuery.GetSingleton<ChangeTurnComponent>().currentTurnTeam;
-            var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
 
             ChangeTurn(ecbParallel, currentTurnTeam);
 
@@ -44,7 +38,7 @@ namespace Assets.Scripts.Systems
                     gameManagerComponent.teamToMove = SwapTeam(currentTurnTeam);
                     CreateFlagPassedCheckerEntity(entityInQueryIndex, ecbParallel);
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private static Team SwapTeam(Team currentTurnTeam)
@@ -59,7 +53,7 @@ namespace Assets.Scripts.Systems
                 ForEach((Entity e, int entityInQueryIndex) => {
                     ecbParallel.DestroyEntity(entityInQueryIndex,e);
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
 
         }
     }

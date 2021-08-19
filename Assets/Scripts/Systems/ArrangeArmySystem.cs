@@ -10,17 +10,15 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    public class ArrangeArmySystem : SystemBase
+    public class ArrangeArmySystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
         private EntityManager entityManager;
 
         protected override void OnCreate()
         {
             base.OnCreate();
             // Find the ECB system once and store it for later usage
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+
             entityManager = World.EntityManager;
         }
 
@@ -28,7 +26,7 @@ namespace Assets.Scripts.Systems
         {
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
             var roundedWorldPos = Location.GetRoundedMousePosition();
-            var ecb = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
 
             var highlightedCellQuery = GetEntityQuery(ComponentType.ReadOnly<CellTag>(), ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<Translation>());
             var highlightedPieceQuery = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<HighlightedTag>(), typeof(Translation));
@@ -79,7 +77,7 @@ namespace Assets.Scripts.Systems
                             });
                     }
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
+            EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
 
 
@@ -103,7 +101,7 @@ namespace Assets.Scripts.Systems
                         Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, cellEntity);
                     }
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
+            EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
 
         private void SwapPieces(Translation firstEntityTranslation, Translation secondEntityTranslation, EntityCommandBuffer.ParallelWriter ecb)
@@ -117,7 +115,7 @@ namespace Assets.Scripts.Systems
                     ecb.SetComponent(entityInQueryIndex, pieceEntity, new OriginalLocationComponent{ originalLocation = newPieceLocation});
 
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
+            EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
 
         private static float3 GetNewPieceLocation(Translation firstTranslation, Translation secondTranslation, Translation pieceTranslation)
@@ -142,7 +140,7 @@ namespace Assets.Scripts.Systems
             {
                 Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, highlightedEntity);
             }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(this.Dependency);
+            EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
     }
 }

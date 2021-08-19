@@ -33,5 +33,10 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
 
         public static float3 PrisonCoordinates => new float3(100, 100, 100);
+        public const float PieceZ = 0f;
+        public const float PlayerPieceStartingXCoordinate = -4f;
+        public const float PlayerPieceStartingYCoordinate = -2f;
+        public const float EnemyPieceStartingXCoordinate = 4f;
+        public const float EnemyPieceStartingYCoordinate = 1f;
     }
 }

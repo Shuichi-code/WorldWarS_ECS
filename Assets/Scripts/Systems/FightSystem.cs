@@ -1,42 +1,36 @@
-﻿using System;
-using System.Linq;
-using Assets.Scripts.Class;
+﻿using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
+using System;
+using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    public class FightSystem : SystemBase
+    public class FightSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
 
         protected override void OnUpdate()
         {
             var fighterQuery = GetEntityQuery(ComponentType.ReadOnly<FighterTag>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>(), ComponentType.ReadOnly<ArmyComponent>());
             if (fighterQuery.CalculateEntityCount() != 2) return;
-            var ecbParallelWriter = ecbSystem.CreateCommandBuffer().AsParallelWriter();
-            var fighterRankArray = fighterQuery.ToComponentDataArray<RankComponent>(Allocator.TempJob);
-            var fighterTeamArray = fighterQuery.ToComponentDataArray<TeamComponent>(Allocator.TempJob);
-            var fighterEntityArray = fighterQuery.ToEntityArray(Allocator.TempJob);
+            var ecbParallelWriter = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var fighterRankArray = GetComponentDataFromEntity<RankComponent>();
+            var fighterTeamArray = GetComponentDataFromEntity<TeamComponent>();
+            var fighterEntityArray = fighterQuery.ToEntityArray(Allocator.Temp);
 
-            var attackingFighterRank = fighterRankArray[0];
-            var defendingFighterRank = fighterRankArray[1];
+
             var attackingFighterEntity = fighterEntityArray[0];
             var defendingFighterEntity = fighterEntityArray[1];
-            var attackingFighterTeam = fighterTeamArray[0];
-            var defendingFighterTeam = fighterTeamArray[1];
+            var attackingFighterTeam = fighterTeamArray[attackingFighterEntity];
+            var defendingFighterTeam = fighterTeamArray[defendingFighterEntity];
+            var attackingFighterRank = fighterRankArray[attackingFighterEntity];
+            var defendingFighterRank = fighterRankArray[defendingFighterEntity];
 
             var fightResult = FightCalculator.DetermineFightResult(attackingFighterRank.Rank, defendingFighterRank.Rank);
-            var loserEntityArray = new NativeArray<Entity>(2, Allocator.TempJob);
+            var loserEntityArray = new NativeArray<Entity>(2, Allocator.Temp);
             switch (fightResult)
             {
                 case FightResult.AttackerWins:
@@ -60,11 +54,6 @@ namespace Assets.Scripts.Systems
             }
 
             CaptureLosers(loserEntityArray);
-
-            fighterRankArray.Dispose();
-            fighterTeamArray.Dispose();
-            fighterEntityArray.Dispose();
-            loserEntityArray.Dispose();
             RemoveFighterTags(ecbParallelWriter);
         }
 
@@ -94,7 +83,7 @@ namespace Assets.Scripts.Systems
             {
                 ecbParallelWriter.RemoveComponent<FighterTag>(entityInQueryIndex, e);
             }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }

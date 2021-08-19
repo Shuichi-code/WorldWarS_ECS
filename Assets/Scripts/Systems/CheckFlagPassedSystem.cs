@@ -7,25 +7,18 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    public class CheckFlagPassedSystem : SystemBase
+    public class CheckFlagPassedSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
         protected override void OnUpdate()
         {
             var checkFlagPassedQuery = GetEntityQuery(ComponentType.ReadOnly<CheckFlagPassedTag>());
             if (checkFlagPassedQuery.CalculateEntityCount() == 0) return;
 
-            var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
             var flagPassingQuery = GetEntityQuery(ComponentType.ReadOnly<FlagPassingTag>());
             if (flagPassingQuery.CalculateEntityCount() == 0)
             {
                 TagFlagsThatArePassing(ecbParallel);
-                ecbSystem.AddJobHandleForProducer(Dependency);
             }
             else
             {
@@ -54,6 +47,7 @@ namespace Assets.Scripts.Systems
                     if (pieceTeam == homeCellComponent.homeTeam) return;
                     ecbParallel.AddComponent(entityInQueryIndex, pieceEntity, new FlagPassingTag());
                 }).ScheduleParallel();
+                EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private void CheckWhichFlagPassed(Team currentTurnTeam, EntityCommandBuffer.ParallelWriter ecbParallel)
@@ -67,7 +61,7 @@ namespace Assets.Scripts.Systems
                     winningTeam = teamComponent.myTeam
                 });
             }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private void DestroyCheckFlagPassedQueryEntity(EntityCommandBuffer.ParallelWriter ecbParallel)
@@ -77,7 +71,7 @@ namespace Assets.Scripts.Systems
                 ForEach((Entity e, int entityInQueryIndex) => {
                     ecbParallel.DestroyEntity(entityInQueryIndex,e);
             }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }

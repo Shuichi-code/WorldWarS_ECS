@@ -17,7 +17,7 @@ namespace Assets.Scripts.Monobehaviours.UI
         private GameObject chargedAbilityUi;
         private VisualElement chargeButton;
 
-        void Start()
+        private void Start()
         {
             gameManager = GameManager.GetInstance();
             chargedAbilityUi = GameObject.Find(GameConstants.ChargedAbilityUIName);
@@ -54,8 +54,8 @@ namespace Assets.Scripts.Monobehaviours.UI
             else
             {
                 SystemManager.SetSystemStatus<ActivateAbilitySystem>(false);
-                chargeButton.GetFirstOfType<Button>().text = "Activate Ability";
                 SystemManager.SetPickupSystems(true);
+                chargeButton.GetFirstOfType<Button>().text = "Use Charged Ability";
             }
         }
     }

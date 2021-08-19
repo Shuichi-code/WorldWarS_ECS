@@ -10,20 +10,14 @@ namespace Assets.Scripts.Systems
     /// <summary>
     /// System responsible for updating the pieceoncell component after every fight/move.
     /// </summary>
-    public class UpdatePieceOnCellSystem : SystemBase
+    public class UpdatePieceOnCellSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            ecbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
         protected override void OnUpdate()
         {
             var pieceOnCellUpdateQuery = GetEntityQuery(ComponentType.ReadOnly<PieceOnCellUpdaterTag>());
             if (pieceOnCellUpdateQuery.CalculateEntityCount() == 0) return;
 
-            var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
             UpdatePieceOnCellComponents(ecbParallel);
             DeletePieceOnCellUpdaterEntity(ecbParallel);
         }
@@ -36,7 +30,7 @@ namespace Assets.Scripts.Systems
                 {
                     ecbParallel.DestroyEntity(entityInQueryIndex, e);
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private void UpdatePieceOnCellComponents(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
@@ -64,7 +58,7 @@ namespace Assets.Scripts.Systems
                             });
                     }
                 }).Schedule();
-                this.CompleteDependency();
+                CompleteDependency();
             }
             pieceTranslationArray.Dispose();
             piecesEntityArray.Dispose();
@@ -79,7 +73,7 @@ namespace Assets.Scripts.Systems
                 {
                     ecbParallelWriter.RemoveComponent<PieceOnCellComponent>(entityInQueryIndex, e);
                 }).ScheduleParallel();
-            ecbSystem.AddJobHandleForProducer(Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }

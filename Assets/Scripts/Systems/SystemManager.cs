@@ -1,5 +1,5 @@
 ﻿using Assets.Scripts.Monobehaviours.Managers;
-using Assets.Scripts.Systems.Special_Ability_Systems.ArmySystems;
+using Assets.Scripts.Systems.Special_Ability_Systems;
 using Unity.Entities;
 using UnityEngine;
 

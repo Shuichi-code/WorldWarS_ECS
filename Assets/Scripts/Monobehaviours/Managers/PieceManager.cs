@@ -15,18 +15,8 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private EntityArchetype entityArchetype;
         private EntityManager entityManager;
 
-        public const float PieceZ = 0f;
-
         private static PieceManager _instance;
-        private float startingXCoordinate;
-        private float startingYCoordinate;
-        private GameManager gameManager;
         private BoardManager boardManager;
-        private const float PlayerPieceStartingXCoordinate = -4f;
-        private const float PlayerPieceStartingYCoordinate = -2f;
-        private const float EnemyPieceStartingXCoordinate = 4f;
-        private const float EnemyPieceStartingYCoordinate = 1f;
-
 
         public static PieceManager GetInstance()
         {
@@ -40,7 +30,6 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
         void Start()
         {
-            gameManager = GameManager.GetInstance();
             boardManager = BoardManager.GetInstance();
         }
 
@@ -66,11 +55,10 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
                     SetPieceEntityLocation(pieceEntity, pieceLocation);
 
-                    entityManager.SetComponentData(pieceEntity, new TeamComponent(){ myTeam = team});
+                    entityManager.SetComponentData(pieceEntity, new TeamComponent() { myTeam = team });
                     entityManager.SetComponentData(pieceEntity, new RankComponent() { Rank = pieceRank });
                     entityManager.SetComponentData(pieceEntity, new OriginalLocationComponent() { originalLocation = pieceLocation });
-                    entityManager.SetComponentData(pieceEntity, new ArmyComponent() {army = army});
-
+                    entityManager.SetComponentData(pieceEntity, new ArmyComponent() { army = army });
 
                     boardManager.SetPiecesOnCellsAsReference(pieceEntityIndex, pieceLocation, pieceArray, team, pieceRank);
                     pieceEntityIndex++;
@@ -83,7 +71,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
             }
         }
 
-        private void SetPieceEntityLocation(Entity pieceEntity,float3 pieceCoordinate)
+        private void SetPieceEntityLocation(Entity pieceEntity, float3 pieceCoordinate)
         {
             entityManager.SetComponentData(pieceEntity, new Translation { Value = pieceCoordinate });
 
@@ -108,10 +96,10 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public static float3 GetPieceCoordinate(int xIndex, int yIndex, bool isPlayer)
         {
             var pieceCoordinate = isPlayer
-                ? new float2(PlayerPieceStartingXCoordinate + xIndex, PlayerPieceStartingYCoordinate - yIndex)
-                : new float2(EnemyPieceStartingXCoordinate -xIndex, EnemyPieceStartingYCoordinate + yIndex);
+                ? new float2(GameConstants.PlayerPieceStartingXCoordinate + xIndex, GameConstants.PlayerPieceStartingYCoordinate - yIndex)
+                : new float2(GameConstants.EnemyPieceStartingXCoordinate - xIndex, GameConstants.EnemyPieceStartingYCoordinate + yIndex);
 
-            return new float3(pieceCoordinate, PieceZ);
+            return new float3(pieceCoordinate, GameConstants.PieceZ);
         }
     }
 }

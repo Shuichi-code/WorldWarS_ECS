@@ -4,23 +4,13 @@ using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Assets.Scripts.Systems.Special_Ability_Systems.ArmySystems
+namespace Assets.Scripts.Systems.Special_Ability_Systems
 {
-    public class TagSpecialAbilitySystem : SystemBase
+    public class TagSpecialAbilitySystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-
-        protected override void OnCreate()
-        {
-            // Find the ECB system once and store it for later usage
-            base.OnCreate();
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
         protected override void OnUpdate()
         {
-            var ecb = ecbSystem.CreateCommandBuffer();
-            var ecbParallel = ecbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
             var playerEntity = GetPlayerEntity<PlayerTag>();
             var enemyEntity = GetPlayerEntity<EnemyTag>();
 

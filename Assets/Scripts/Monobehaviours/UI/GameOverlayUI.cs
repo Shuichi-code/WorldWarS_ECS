@@ -18,7 +18,7 @@ namespace Assets.Scripts.Monobehaviours.UI
         {
             _instance = GameObject.Find(GameConstants.GameoverlayUIName);
             _instance.SetActive(false);
-            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CountdownSystem>().clockTick += UpdateClock;
+            World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<CountdownSystem>().ClockTick += UpdateClock;
         }
 
         public void UpdateClock( Team team, float time)

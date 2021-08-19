@@ -8,50 +8,40 @@ using Unity.Mathematics;
 
 namespace Assets.Scripts.Systems
 {
-    public class CountdownSystem : SystemBase
+    public class CountdownSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-        private EntityArchetype eventEntityArchetype;
-
         public delegate void CountDownDelegate(Team teamClockToCountDown, float timeRemaining);
-
-        public event CountDownDelegate clockTick;
-
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            // Find the ECB system once and store it for later usage
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        }
+        public event CountDownDelegate ClockTick;
         protected override void OnUpdate()
         {
 
-            var ecb = ecbSystem.CreateCommandBuffer();
+            var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
             var teamToMove = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>())
                 .GetSingleton<GameManagerComponent>().teamToMove;
             var delta = Time.DeltaTime;
-            var clockEntityArchetype = EntityManager.CreateArchetype(typeof(CountdownEventComponent));
 
             Entities.
-                ForEach((Entity e, ref TimeComponent timeComponent, in TeamComponent team) =>
+                ForEach((Entity e, int entityInQueryIndex, ref TimeComponent timeComponent, in TeamComponent team) =>
                 {
                     if (team.myTeam != teamToMove) return;
                     if (timeComponent.TimeRemaining < 0f)
                     {
                         timeComponent.TimeRemaining = 0;
-                        ArbiterCheckingSystem.DeclareWinner(ecb, GameManager.SwapTeam(team.myTeam));
+                        var gameFinishedEntity = ecb.CreateEntity(entityInQueryIndex);
+                        ecb.AddComponent(entityInQueryIndex, gameFinishedEntity, new GameFinishedEventComponent()
+                        {
+                            winningTeam = team.myTeam == Team.Defender ? Team.Invader : Team.Defender
+                        });
                     }
                     else
                     {
                         timeComponent.TimeRemaining -= delta;
-                        var eventEntity = ecb.CreateEntity(clockEntityArchetype);
-                        ecb.AddComponent(eventEntity,
+                        var eventEntity = ecb.CreateEntity(entityInQueryIndex);
+                        ecb.AddComponent(entityInQueryIndex, eventEntity,
                             new CountdownEventComponent() { winningTeam = team.myTeam, Time = timeComponent.TimeRemaining });
                     }
-                }).Schedule();
-            Dependency.Complete();
-            //ecbSystem.AddJobHandleForProducer(this.Dependency);
+                }).ScheduleParallel();
+                EcbSystem.AddJobHandleForProducer(this.Dependency);
 
             CheckIfCountDownEventRaised();
         }
@@ -59,7 +49,7 @@ namespace Assets.Scripts.Systems
         private void CheckIfCountDownEventRaised()
         {
             Entities
-                .ForEach((in CountdownEventComponent eventComponent) => { clockTick?.Invoke(eventComponent.winningTeam, eventComponent.Time); })
+                .ForEach((in CountdownEventComponent eventComponent) => { ClockTick?.Invoke(eventComponent.winningTeam, eventComponent.Time); })
                 .WithoutBurst().Run();
             EntityManager.DestroyEntity(GetEntityQuery(typeof(CountdownEventComponent)));
         }
