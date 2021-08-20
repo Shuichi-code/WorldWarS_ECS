@@ -11,7 +11,7 @@ namespace Assets.Scripts.Systems
     {
         protected override void OnUpdate()
         {
-            var collideEventQuery = GetEntityQuery(ComponentType.ReadOnly<CheckCollideComponent>());
+            var collideEventQuery = GetEntityQuery(ComponentType.ReadOnly<PieceCollisionCheckerTag>());
             if (collideEventQuery.CalculateEntityCount() == 0) return;
             var playerPiecesQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<Translation>());
             var playerPiecesEntityArray = playerPiecesQuery.ToEntityArray(Allocator.TempJob);
@@ -39,7 +39,7 @@ namespace Assets.Scripts.Systems
 
         private void DestroyCollideEventComponent(EntityCommandBuffer.ParallelWriter ecb)
         {
-            Entities.ForEach((Entity e, int entityInQueryIndex, in CheckCollideComponent collide) =>
+            Entities.ForEach((Entity e, int entityInQueryIndex, in PieceCollisionCheckerTag collide) =>
             {
                 ecb.DestroyEntity(entityInQueryIndex, e);
             }).ScheduleParallel();

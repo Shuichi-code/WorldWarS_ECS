@@ -69,7 +69,7 @@ namespace Assets.Scripts.Systems
         private static void CheckForCollisions(EntityCommandBuffer.ParallelWriter ecb, int entityInQueryIndex)
         {
             var checkColliderEntity = ecb.CreateEntity(entityInQueryIndex);
-            ecb.AddComponent(entityInQueryIndex, checkColliderEntity, new CheckCollideComponent());
+            ecb.AddComponent(entityInQueryIndex, checkColliderEntity, new PieceCollisionCheckerTag());
         }
 
         /// <summary>

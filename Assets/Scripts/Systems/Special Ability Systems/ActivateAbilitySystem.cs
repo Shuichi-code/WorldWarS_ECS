@@ -69,17 +69,16 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
             if (spearTipQuery.CalculateEntityCount() == 0) return;
 
-            CheckIfBatallionIsInBattle(ecbParallelWriter, spearTipQuery);
-            UpdatePiecesOnCells();
+
+            CreateSingleEvent<PieceCollisionCheckerTag>();
             ChangeTurn(chargedFiveStarTeam);
             RemoveNaziSpecialAbilityTags(ecbParallelWriter);
+            CreateSingleEvent<PieceOnCellUpdaterTag>();
             RestoreNormalSystems();
         }
-
-        private void UpdatePiecesOnCells()
+        private void CreateSingleEvent<T>()
         {
-            var updatePieceEntity = EntityManager.CreateEntity();
-            EntityManager.AddComponentData(updatePieceEntity, new PieceOnCellUpdaterTag());
+            EntityManager.CreateEntity(typeof(T));
         }
 
         private void CheckIfBatallionIsInBattle(EntityCommandBuffer.ParallelWriter ecbParallelWriter, EntityQuery spearTipQuery)
@@ -302,12 +301,10 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 WithAll<PlayerTag, PieceTag>().
                 ForEach((Entity e, int entityInQueryIndex, in RankComponent rankComponent) =>
                 {
-                    if (rankComponent.Rank == Piece.FiveStarGeneral)
-                    {
-                        ecbParallelWriter.AddComponent<ChargedFiveStarGeneralTag>(entityInQueryIndex, e);
-                        if (!HasComponent<BulletComponent>(e))
-                            ecbParallelWriter.AddComponent<BulletComponent>(entityInQueryIndex, e);
-                    }
+                    if (rankComponent.Rank != Piece.FiveStarGeneral) return;
+                    ecbParallelWriter.AddComponent<ChargedFiveStarGeneralTag>(entityInQueryIndex, e);
+                    if (!HasComponent<BulletComponent>(e))
+                        ecbParallelWriter.AddComponent<BulletComponent>(entityInQueryIndex, e);
                 }).ScheduleParallel();
             EcbSystem.AddJobHandleForProducer(Dependency);
         }
@@ -367,7 +364,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             CheckBullets<PlayerTag>();
 
             RestoreNormalSystems();
-            EntityManager.CreateEntity(EntityManager.CreateArchetype(typeof(PieceOnCellUpdaterTag)));
+            CreateSingleEvent<PieceOnCellUpdaterTag>();
             ChangeTurn(spyTeam);
         }
 
