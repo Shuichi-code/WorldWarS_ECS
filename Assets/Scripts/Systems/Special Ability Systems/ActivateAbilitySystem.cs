@@ -335,16 +335,12 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var playerQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
                 ComponentType.ReadOnly<TimeComponent>(), ComponentType.ReadOnly<TeamComponent>());
 
-            EntityManager.AddComponent<FighterTag>(spyEntity);
-            EntityManager.AddComponent<FighterTag>(targetEntity);
             var fightResult = FightCalculator.DetermineFightResult(Piece.Spy, targetRank);
             switch (fightResult)
             {
                 case FightResult.AttackerWins:
                     //destroy the target
                     EntityManager.AddComponent<CapturedComponent>(targetEntity);
-                    //remove the pieceoncellcomponent where the target was standing
-                    RemovePieceOnCellComponentUnderEntity(ecbParallelWriter, targetEntity);
                     break;
                 case FightResult.DefenderWins:
                     EntityManager.AddComponent<RevealedTag>(spyEntity);
@@ -371,6 +367,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             CheckBullets<PlayerTag>();
 
             RestoreNormalSystems();
+            EntityManager.CreateEntity(EntityManager.CreateArchetype(typeof(PieceOnCellUpdaterTag)));
             ChangeTurn(spyTeam);
         }
 
