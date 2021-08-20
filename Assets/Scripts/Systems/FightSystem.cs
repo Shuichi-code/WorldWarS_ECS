@@ -9,6 +9,7 @@ using Unity.Jobs;
 
 namespace Assets.Scripts.Systems
 {
+    [DisableAutoCreation]
     public class FightSystem : ParallelSystem
     {
 
@@ -54,7 +55,9 @@ namespace Assets.Scripts.Systems
             }
 
             CaptureLosers(loserEntityArray);
-            RemoveFighterTags(ecb);
+
+            EntityManager.RemoveComponent<FighterTag>(fighterQuery);
+                //RemoveFighterTags(ecb);
         }
 
         private void DeclareWinner(Team teamWinner)

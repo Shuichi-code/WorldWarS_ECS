@@ -1,4 +1,5 @@
 using Assets.Scripts.Class;
+using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,29 +11,51 @@ namespace Assets.Scripts.Systems
     {
         protected override void OnUpdate()
         {
-
-            var playerPiecesQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<PieceTag>(), typeof(Translation));
+            var collideEventQuery = GetEntityQuery(ComponentType.ReadOnly<CheckCollideComponent>());
+            if (collideEventQuery.CalculateEntityCount() == 0) return;
+            var playerPiecesQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<Translation>());
             var playerPiecesEntityArray = playerPiecesQuery.ToEntityArray(Allocator.TempJob);
-            var playerPiecesTranslationArray = GetComponentDataFromEntity<Translation>();
-            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var playerPiecesTranslationArray = GetComponentDataFromEntity<Translation>(true);
+            var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
 
             foreach (var playerPieceEntity in playerPiecesEntityArray)
             {
                 var playerPieceTranslation = playerPiecesTranslationArray[playerPieceEntity];
+
+                //WARNING! This needs to be run on Schedule() only due to the use of the translation component data array
                 Entities.
                     WithAll<PieceTag, EnemyTag>().
-                    ForEach((Entity enemyPieceEntity, int entityInQueryIndex, ref Translation translation) =>
+                    ForEach((Entity enemyPieceEntity,int entityInQueryIndex, ref Translation translation) =>
                     {
                         if (!Location.IsMatchLocation(playerPieceTranslation.Value, translation.Value)) return;
-                        ecbParallel.AddComponent(entityInQueryIndex, enemyPieceEntity, new FighterTag());
-                        ecbParallel.AddComponent(entityInQueryIndex, playerPieceEntity, new FighterTag());
+                        CreateArbiter(ecb, enemyPieceEntity, playerPieceEntity, entityInQueryIndex);
                     }).Schedule();
                 //EcbSystem.AddJobHandleForProducer(Dependency);
                 CompleteDependency();
             }
-
-
             playerPiecesEntityArray.Dispose();
+            DestroyCollideEventComponent(ecb);
+        }
+
+        private void DestroyCollideEventComponent(EntityCommandBuffer.ParallelWriter ecb)
+        {
+            Entities.ForEach((Entity e, int entityInQueryIndex, in CheckCollideComponent collide) =>
+            {
+                ecb.DestroyEntity(entityInQueryIndex, e);
+            }).ScheduleParallel();
+            //CompleteDependency();
+            EcbSystem.AddJobHandleForProducer(Dependency);
+        }
+
+        private static void CreateArbiter(EntityCommandBuffer.ParallelWriter ecbParallel, Entity enemyPieceEntity,
+            Entity playerPieceEntity, int entityInQueryIndex)
+        {
+            var arbiterEntity = ecbParallel.CreateEntity(entityInQueryIndex);
+            ecbParallel.AddComponent(entityInQueryIndex, arbiterEntity, new ArbiterComponent()
+            {
+                attackingPieceEntity = enemyPieceEntity,
+                defendingPieceEntity = playerPieceEntity
+            });
         }
     }
 }

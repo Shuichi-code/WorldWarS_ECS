@@ -20,7 +20,7 @@ namespace Assets.Scripts.Systems
             var worldPosNormalized = new float3(worldPos.x, worldPos.y, GameConstants.PieceZ);
             const int speed = 1;
 
-            bool mouseButtonHeld = Input.GetKey(KeyCode.Mouse0);
+            var mouseButtonHeld = Input.GetKey(KeyCode.Mouse0);
             var cellQuery = GetEntityQuery(ComponentType.ReadOnly<CellTag>(), ComponentType.ReadOnly<Translation>());
             var highlightedCellQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<Translation>());
             var enemyCellQuery = GetEntityQuery(ComponentType.ReadOnly<EnemyCellTag>(), ComponentType.ReadOnly<Translation>());
@@ -30,7 +30,6 @@ namespace Assets.Scripts.Systems
             NativeArray<Translation> enemyCellTranslationArray = enemyCellQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
             NativeArray<Entity> cellEntities = cellQuery.ToEntityArray(Allocator.TempJob);
             NativeArray<Entity> enemyCellEntities = enemyCellQuery.ToEntityArray(Allocator.TempJob);
-            var pieceOnCellComponentArray = GetComponentDataFromEntity<PieceOnCellComponent>();
             #endregion
             //WARNING! This job needs to be run only on Schedule() to prevent race condition
             Entities.
@@ -44,25 +43,19 @@ namespace Assets.Scripts.Systems
                     if (mouseButtonHeld) return;
                     if (IsValidMove(highlightedCellTranslationArray, enemyCellTranslationArray, pieceTranslation))
                     {
-                        //if(Location.HasMatch(enemyCellTranslationArray, pieceTranslation))
-                        //{
-                        //    Debug.Log("Found battle!");
-                        //    var enemyCellEntity = Location.GetMatchedEntity(enemyCellEntities, enemyCellTranslationArray, pieceTranslation.Value);
-                        //    var enemyEntity = pieceOnCellComponentArray[enemyCellEntity].PieceEntity;
-                        //    ecbParallel.AddComponent(entityInQueryIndex,e , new FighterTag());
-                        //    ecbParallel.AddComponent(entityInQueryIndex,enemyEntity, new FighterTag());
-                        //}
 
                         pieceTranslation.Value = math.round(pieceTranslation.Value);
                         originalLocation.originalLocation = pieceTranslation.Value;
 
-                        ChangeTurn(entityInQueryIndex, ecbParallel, teamComponent);
+                        CheckForCollisions(ecbParallel, entityInQueryIndex);
+
+                        ChangeTurn( ecbParallel, teamComponent, entityInQueryIndex);
                         UpdatePiecesOnCells(ecbParallel, entityInQueryIndex);
                     }
                     else
                         pieceTranslation.Value = originalLocation.originalLocation;
 
-                    ecbParallel.RemoveComponent<SelectedTag>(entityInQueryIndex,e);
+                    ecbParallel.RemoveComponent<SelectedTag>(entityInQueryIndex, e);
                 }).Schedule();
                 CompleteDependency();
 
@@ -73,13 +66,25 @@ namespace Assets.Scripts.Systems
             cellEntities.Dispose();
         }
 
+        private static void CheckForCollisions(EntityCommandBuffer.ParallelWriter ecb, int entityInQueryIndex)
+        {
+            var checkColliderEntity = ecb.CreateEntity(entityInQueryIndex);
+            ecb.AddComponent(entityInQueryIndex, checkColliderEntity, new CheckCollideComponent());
+        }
+
+        /// <summary>
+        /// Creates PieceOnCellUpdaterTag To Activate Syste
+        /// </summary>
+        /// <param name="ecbParallel"></param>
+        /// <param name="entityInQueryIndex"></param>
         private static void UpdatePiecesOnCells(EntityCommandBuffer.ParallelWriter ecbParallel, int entityInQueryIndex)
         {
+            SystemManager.SetSystemStatus<UpdatePieceOnCellSystem>(true);
             var pieceOnCellUpdaterEntity = ecbParallel.CreateEntity(entityInQueryIndex);
             ecbParallel.AddComponent(entityInQueryIndex, pieceOnCellUpdaterEntity, new PieceOnCellUpdaterTag());
         }
 
-        private static void ChangeTurn(int entityInQueryIndex, EntityCommandBuffer.ParallelWriter ecb, TeamComponent teamComponent)
+        private static void ChangeTurn(EntityCommandBuffer.ParallelWriter ecb, TeamComponent teamComponent, int entityInQueryIndex)
         {
             var changeTurnEntity = ecb.CreateEntity(entityInQueryIndex);
             ecb.AddComponent(entityInQueryIndex, changeTurnEntity, new ChangeTurnComponent()

@@ -8,7 +8,5 @@ namespace Assets.Scripts.Components
     {
         public Entity attackingPieceEntity;
         public Entity defendingPieceEntity;
-        public Entity battlegroundCellEntity;
-        public Entity originalCellEntity;
     }
 }

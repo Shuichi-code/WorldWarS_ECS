@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
-    [DisableAutoCreation]
+    //[DisableAutoCreation]
     public class ArbiterCheckingSystem : SystemBase
     {
         private EndSimulationEntityCommandBufferSystem ecbSystem;
@@ -35,7 +35,6 @@ namespace Assets.Scripts.Systems
 
             var teamComponentArray = GetComponentDataFromEntity<TeamComponent>();
             var rankComponentArray = GetComponentDataFromEntity<RankComponent>();
-            var flagPassedQuery = GetEntityQuery(ComponentType.ReadOnly<FlagPassingTag>());
 
             #endregion Initializing Data
 
@@ -43,35 +42,30 @@ namespace Assets.Scripts.Systems
                 .WithAll<ArbiterComponent>()
                 .ForEach((Entity arbiterEntity, in ArbiterComponent arbiter) =>
                 {
-                    var fightResult = FightResult.NoFight;
                     var attackingRank = rankComponentArray[arbiter.attackingPieceEntity].Rank;
                     var attackingTeam = teamComponentArray[arbiter.attackingPieceEntity].myTeam;
-                    var winningPieceEntity = Entity.Null;
                     if (IsThereAFight(arbiter))
                     {
-                        int defendingRank = rankComponentArray[arbiter.defendingPieceEntity].Rank;
-                        fightResult = FightCalculator.DetermineFightResult(attackingRank, defendingRank);
+                        var defendingRank = rankComponentArray[arbiter.defendingPieceEntity].Rank;
+                        var fightResult = FightCalculator.DetermineFightResult(attackingRank, defendingRank);
 
                         switch (fightResult)
                         {
                             case FightResult.AttackerWins:
                                 ecb.AddComponent<CapturedComponent>(arbiter.defendingPieceEntity);
-                                winningPieceEntity = arbiter.attackingPieceEntity;
                                 break;
 
                             case FightResult.DefenderWins:
                                 ecb.AddComponent<CapturedComponent>(arbiter.attackingPieceEntity);
-                                winningPieceEntity = arbiter.defendingPieceEntity;
                                 break;
 
                             case FightResult.BothLose:
                                 ecb.AddComponent<CapturedComponent>(arbiter.defendingPieceEntity);
                                 ecb.AddComponent<CapturedComponent>(arbiter.attackingPieceEntity);
-                                ecb.RemoveComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity);
                                 break;
 
                             case FightResult.FlagDestroyed:
-                                var teamWinner = (defendingRank == Piece.Flag ? attackingTeam : GameManager.SwapTeam(attackingTeam));
+                                var teamWinner = attackingTeam == Team.Invader ? Team.Defender : Team.Invader;
                                 DeclareWinner(ecb, teamWinner);
                                 break;
 
@@ -84,59 +78,9 @@ namespace Assets.Scripts.Systems
                         }
                     }
 
-                    if (fightResult != FightResult.BothLose)
-                    {
-                        if (!HasComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity))
-                            ecb.AddComponent<PieceOnCellComponent>(arbiter.battlegroundCellEntity);
-
-                        ecb.SetComponent(arbiter.battlegroundCellEntity, new PieceOnCellComponent
-                        {
-                            PieceEntity = winningPieceEntity == Entity.Null ? arbiter.attackingPieceEntity : winningPieceEntity
-                        });
-                        if (attackingRank == Piece.Flag)
-                            CheckIfFlagIsOnLastCell(arbiter, attackingTeam, ecb);
-                    }
-
-                    if (HasFlagAlreadyPassedLastCell(flagPassedQuery))
-                        DeclareWinner(ecb, GameManager.SwapTeam(attackingTeam));
-
-                    ChangeTurn(attackingTeam);
-
                     ecb.DestroyEntity(arbiterEntity);
-                }).WithoutBurst().Run();
-
-            CheckIfGameFinishedEventRaised(ecb);
-        }
-
-        private void CheckIfGameFinishedEventRaised(EntityCommandBuffer ecb)
-        {
-            Entities
-                .ForEach((Entity e, in GameFinishedEventComponent eventComponent) =>
-                {
-                    OnGameWin?.Invoke(eventComponent.winningTeam);
-                })
-                .WithoutBurst().Run();
-            EntityManager.DestroyEntity(GetEntityQuery(typeof(GameFinishedEventComponent)));
-        }
-
-        public static void ChangeTurn(Team attackingTeam)
-        {
-            GameManager.GetInstance().SetGameState(GameState.Playing, GameManager.SwapTeam(attackingTeam));
-        }
-
-        private static bool HasFlagAlreadyPassedLastCell(EntityQuery flagPassedQuery)
-        {
-            return flagPassedQuery.CalculateEntityCount() > 0;
-        }
-
-        private void CheckIfFlagIsOnLastCell(ArbiterComponent arbiter, Team attackingTeam, EntityCommandBuffer ecb)
-        {
-            if (!HasComponent<LastCellsTag>(arbiter.battlegroundCellEntity)) return;
-            var cellTeamArray = GetComponentDataFromEntity<HomeCellComponent>();
-            var cellTeam = cellTeamArray[arbiter.battlegroundCellEntity].homeTeam;
-            if (attackingTeam == GameManager.SwapTeam(cellTeam))
-                ecb.AddComponent<FlagPassingTag>(arbiter.attackingPieceEntity);
-
+                }).Schedule();
+            CompleteDependency();
         }
 
         private static bool IsThereAFight(ArbiterComponent arbiter)

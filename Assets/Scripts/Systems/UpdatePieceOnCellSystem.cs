@@ -13,14 +13,21 @@ namespace Assets.Scripts.Systems
     /// </summary>
     public class UpdatePieceOnCellSystem : ParallelSystem
     {
+        protected override void OnCreate()
+        {
+            base.OnCreate();
+            this.Enabled = false;
+        }
+
         protected override void OnUpdate()
         {
-            var pieceOnCellUpdateQuery = GetEntityQuery(ComponentType.ReadOnly<PieceOnCellUpdaterTag>());
-            if (pieceOnCellUpdateQuery.CalculateEntityCount() == 0) return;
+            //var pieceOnCellUpdateQuery = GetEntityQuery(ComponentType.ReadOnly<PieceOnCellUpdaterTag>());
+            //if (pieceOnCellUpdateQuery.CalculateEntityCount() == 0) return;
 
             var ecb = EcbSystem.CreateCommandBuffer();
             UpdatePieceOnCellComponents(ecb);
-            DeletePieceOnCellUpdaterEntity(ecb);
+            this.Enabled = false;
+            //DeletePieceOnCellUpdaterEntity(ecb);
         }
 
         private void DeletePieceOnCellUpdaterEntity(EntityCommandBuffer ecb)
