@@ -110,9 +110,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
                 entityManager.SetComponentData(boardArray[j],
                     new PieceOnCellComponent
                     {
-                        PieceEntity = pieceArray[i],
-                        PieceRank = pieceRank,
-                        PieceTeam = pieceTeam
+                        PieceEntity = pieceArray[i]
                     }
                 );
             }

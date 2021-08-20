@@ -1,9 +1,8 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags.Single_Turn_Event_Tag;
+using Unity.Collections;
 using Unity.Entities;
-using Unity.Transforms;
-using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
@@ -15,6 +14,7 @@ namespace Assets.Scripts.Systems
             if (checkFlagPassedQuery.CalculateEntityCount() == 0) return;
 
             var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
             var flagPassingQuery = GetEntityQuery(ComponentType.ReadOnly<FlagPassingTag>());
             if (flagPassingQuery.CalculateEntityCount() == 0)
             {
@@ -33,21 +33,25 @@ namespace Assets.Scripts.Systems
         /// Checks all of the last line cells if there are any flag entities associated with them
         /// </summary>
         /// <param name="ecbParallel"></param>
-        private void TagFlagsThatArePassing(EntityCommandBuffer.ParallelWriter ecbParallel)
+        private void TagFlagsThatArePassing(EntityCommandBuffer.ParallelWriter ecb)
         {
+            var rankArray = GetComponentDataFromEntity<RankComponent>();
+            var teamArray = GetComponentDataFromEntity<TeamComponent>();
+
             Entities.WithAll<PieceOnCellComponent, LastCellsTag>().ForEach(
                 (int entityInQueryIndex, in PieceOnCellComponent pieceOnCellComponent,
                     in HomeCellComponent homeCellComponent) =>
                 {
                     var pieceEntity = pieceOnCellComponent.PieceEntity;
-                    var pieceRank = pieceOnCellComponent.PieceRank;
-                    var pieceTeam = pieceOnCellComponent.PieceTeam;
+                    var pieceRank = rankArray[pieceEntity].Rank;
+                    var pieceTeam = teamArray[pieceEntity].myTeam;
 
                     if (pieceRank != Piece.Flag) return;
                     if (pieceTeam == homeCellComponent.homeTeam) return;
-                    ecbParallel.AddComponent(entityInQueryIndex, pieceEntity, new FlagPassingTag());
-                }).ScheduleParallel();
-                EcbSystem.AddJobHandleForProducer(Dependency);
+                    ecb.AddComponent(entityInQueryIndex, pieceEntity, new FlagPassingTag());
+                }).Schedule();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
+            CompleteDependency();
         }
 
         private void CheckWhichFlagPassed(Team currentTurnTeam, EntityCommandBuffer.ParallelWriter ecbParallel)
@@ -68,9 +72,10 @@ namespace Assets.Scripts.Systems
         {
             Entities.
                 WithAll<CheckFlagPassedTag>().
-                ForEach((Entity e, int entityInQueryIndex) => {
-                    ecbParallel.DestroyEntity(entityInQueryIndex,e);
-            }).ScheduleParallel();
+                ForEach((Entity e, int entityInQueryIndex) =>
+                {
+                    ecbParallel.DestroyEntity(entityInQueryIndex, e);
+                }).ScheduleParallel();
             EcbSystem.AddJobHandleForProducer(Dependency);
         }
     }

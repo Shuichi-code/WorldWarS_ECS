@@ -7,39 +7,19 @@ using UnityEngine;
 namespace Assets.Scripts.Systems
 {
     //[DisableAutoCreation]
-    public class ArbiterCheckingSystem : SystemBase
+    public class ArbiterCheckingSystem : ParallelSystem
     {
-        private EndSimulationEntityCommandBufferSystem ecbSystem;
-        private GameManager gameManager;
-        private static EntityArchetype _eventEntityArchetype;
-
-        public delegate void GameWinnerDelegate(Team winningTeam);
-        public event GameWinnerDelegate OnGameWin;
-
-        protected override void OnCreate()
-        {
-            // Find the ECB system once and store it for later usage
-            base.OnCreate();
-            ecbSystem = World
-                .GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-            gameManager = GameManager.GetInstance();
-        }
 
         protected override void OnUpdate()
         {
 
             #region Initializing Data
-
-            var ecb = ecbSystem.CreateCommandBuffer();
-            _eventEntityArchetype = EntityManager.CreateArchetype(typeof(GameFinishedEventComponent));
-
+            var ecb = EcbSystem.CreateCommandBuffer();
             var teamComponentArray = GetComponentDataFromEntity<TeamComponent>();
             var rankComponentArray = GetComponentDataFromEntity<RankComponent>();
-
             #endregion Initializing Data
 
             Entities
-                .WithAll<ArbiterComponent>()
                 .ForEach((Entity arbiterEntity, in ArbiterComponent arbiter) =>
                 {
                     var attackingRank = rankComponentArray[arbiter.attackingPieceEntity].Rank;

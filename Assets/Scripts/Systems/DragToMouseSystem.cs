@@ -79,7 +79,6 @@ namespace Assets.Scripts.Systems
         /// <param name="entityInQueryIndex"></param>
         private static void UpdatePiecesOnCells(EntityCommandBuffer.ParallelWriter ecbParallel, int entityInQueryIndex)
         {
-            SystemManager.SetSystemStatus<UpdatePieceOnCellSystem>(true);
             var pieceOnCellUpdaterEntity = ecbParallel.CreateEntity(entityInQueryIndex);
             ecbParallel.AddComponent(entityInQueryIndex, pieceOnCellUpdaterEntity, new PieceOnCellUpdaterTag());
         }

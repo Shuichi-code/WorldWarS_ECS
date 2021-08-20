@@ -11,23 +11,18 @@ namespace Assets.Scripts.Systems
     /// <summary>
     /// System responsible for updating the pieceoncell component after every fight/move.
     /// </summary>
+    [UpdateAfter(typeof(ArbiterCheckingSystem))]
+    [UpdateAfter(typeof(DragToMouseSystem))]
     public class UpdatePieceOnCellSystem : ParallelSystem
     {
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            this.Enabled = false;
-        }
 
         protected override void OnUpdate()
         {
-            //var pieceOnCellUpdateQuery = GetEntityQuery(ComponentType.ReadOnly<PieceOnCellUpdaterTag>());
-            //if (pieceOnCellUpdateQuery.CalculateEntityCount() == 0) return;
-
+            var pieceOnCellUpdateQuery = GetEntityQuery(ComponentType.ReadOnly<PieceOnCellUpdaterTag>());
+            if (pieceOnCellUpdateQuery.CalculateEntityCount() == 0) return;
             var ecb = EcbSystem.CreateCommandBuffer();
             UpdatePieceOnCellComponents(ecb);
-            this.Enabled = false;
-            //DeletePieceOnCellUpdaterEntity(ecb);
+            DeletePieceOnCellUpdaterEntity(ecb);
         }
 
         private void DeletePieceOnCellUpdaterEntity(EntityCommandBuffer ecb)
@@ -39,7 +34,7 @@ namespace Assets.Scripts.Systems
                     ecb.DestroyEntity(e);
                 }).Schedule();
             CompleteDependency();
-            //EcbSystem.AddJobHandleForProducer(Dependency);
+            //Ecb.AddJobHandleForProducer(Dependency);
         }
 
         private void UpdatePieceOnCellComponents(EntityCommandBuffer ecb)
@@ -47,32 +42,28 @@ namespace Assets.Scripts.Systems
             RemoveAllPieceOnCellComponents(ecb);
 
             var pieceEntitiesQuery = GetEntityQuery(ComponentType.ReadOnly<PieceTag>(), ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
-            var pieceTranslationArray = pieceEntitiesQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
-            var pieceRankArray = pieceEntitiesQuery.ToComponentDataArray<RankComponent>(Allocator.TempJob);
-            var piecesTeamArray = pieceEntitiesQuery.ToComponentDataArray<TeamComponent>(Allocator.TempJob);
+            var pieceTranslationArray = GetComponentDataFromEntity<Translation>(true);
             var piecesEntityArray = pieceEntitiesQuery.ToEntityArray(Allocator.TempJob);
-            for (var index = 0; index < pieceTranslationArray.Length; index++)
+            foreach (var pieceEntity in piecesEntityArray)
             {
-                var pieceTranslation = pieceTranslationArray[index];
+                var pieceTranslation = pieceTranslationArray[pieceEntity];
+
+                //WARNING! This can only be run with Schedule() due to it is inside a for loop.
                 Entities.WithAll<CellTag>().ForEach((Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
                 {
                     if (Location.IsMatchLocation(pieceTranslation.Value, cellTranslation.Value))
                     {
-                        ecb.AddComponent( cellEntity,
+                        ecb.AddComponent(cellEntity,
                             new PieceOnCellComponent()
                             {
-                                PieceEntity = piecesEntityArray[index],
-                                PieceRank = pieceRankArray[index].Rank,
-                                PieceTeam = piecesTeamArray[index].myTeam
+                                PieceEntity = pieceEntity
                             });
                     }
                 }).Schedule();
                 CompleteDependency();
+                //EcbSystem.AddJobHandleForProducer(Dependency);
             }
-            pieceTranslationArray.Dispose();
             piecesEntityArray.Dispose();
-            pieceRankArray.Dispose();
-            piecesTeamArray.Dispose();
         }
 
         private void RemoveAllPieceOnCellComponents(EntityCommandBuffer ecb)

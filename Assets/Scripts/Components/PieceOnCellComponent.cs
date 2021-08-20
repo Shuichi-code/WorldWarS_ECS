@@ -8,7 +8,5 @@ namespace Assets.Scripts.Components
     public struct PieceOnCellComponent : IComponentData
     {
         public Entity PieceEntity { get; set; }
-        public Team PieceTeam { get; set; }
-        public int PieceRank { get; set; }
     }
 }
