@@ -1,17 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using Assets.Scripts.Class;
 using NUnit.Framework;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
-using UnityEngine.TestTools;
 
 namespace Assets.Editor.MTests
 {
     [TestFixture]
-    public class LocationTests : MonoBehaviour
+    public class LocationTests
     {
         [Test]
         [TestCase(1, 2, 3)]

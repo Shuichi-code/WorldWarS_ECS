@@ -1,6 +1,5 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
-using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
@@ -111,8 +110,8 @@ namespace Assets.Scripts.Systems
                 {
                     var newPieceLocation = GetNewPieceLocation(firstEntityTranslation, secondEntityTranslation, pieceTranslation);
 
-                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new Translation {Value = newPieceLocation});
-                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new OriginalLocationComponent{ originalLocation = newPieceLocation});
+                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new Translation { Value = newPieceLocation });
+                    ecb.SetComponent(entityInQueryIndex, pieceEntity, new OriginalLocationComponent { originalLocation = newPieceLocation });
 
                 }).ScheduleParallel();
             EcbSystem.AddJobHandleForProducer(this.Dependency);

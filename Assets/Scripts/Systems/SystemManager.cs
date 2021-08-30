@@ -11,7 +11,7 @@ namespace Assets.Scripts.Systems
         private void OnEnable()
         {
             GameManager = GameManager.GetInstance();
-            GameManager.SetArrangementSystemStatus += SetSystemStatus<ArrangeArmySystem>;
+            GameManager.SetArrangementSystemStatus += SetArrangeSystemStatus;
             GameManager.SetActivateAbilitySystemStatus += SetSpecialAbilitySystems;
             GameManager.SetSystemStatus += SetGameSystemStatus;
         }
@@ -19,6 +19,10 @@ namespace Assets.Scripts.Systems
         public static void SetSystemStatus<T>(bool enabled) where T : SystemBase
         {
             World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<T>().Enabled = enabled;
+        }
+        public static void SetArrangeSystemStatus(bool enabled)
+        {
+            SetSystemStatus<ArrangeArmySystem>(enabled);
         }
 
         public static bool GetSystemStatus<T>() where T : SystemBase

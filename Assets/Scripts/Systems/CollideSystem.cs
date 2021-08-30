@@ -4,6 +4,7 @@ using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
@@ -25,26 +26,29 @@ namespace Assets.Scripts.Systems
                 //WARNING! This needs to be run on Schedule() only due to the use of the translation component data array
                 Entities.
                     WithAll<PieceTag, EnemyTag>().
+                    WithNone<PrisonerTag>().
                     ForEach((Entity enemyPieceEntity,int entityInQueryIndex, ref Translation translation) =>
                     {
                         if (!Location.IsMatchLocation(playerPieceTranslation.Value, translation.Value)) return;
+                        Debug.Log("Collision detected!");
                         CreateArbiter(ecb, enemyPieceEntity, playerPieceEntity, entityInQueryIndex);
                     }).Schedule();
                 //EcbSystem.AddJobHandleForProducer(Dependency);
                 CompleteDependency();
             }
             playerPiecesEntityArray.Dispose();
-            DestroyCollideEventComponent(ecb);
+            DestroyCollideEventComponent();
         }
 
-        private void DestroyCollideEventComponent(EntityCommandBuffer.ParallelWriter ecb)
+        private void DestroyCollideEventComponent()
         {
+            var ecb = EcbSystem.CreateCommandBuffer();
             Entities.ForEach((Entity e, int entityInQueryIndex, in PieceCollisionCheckerTag collide) =>
             {
-                ecb.DestroyEntity(entityInQueryIndex, e);
-            }).ScheduleParallel();
-            //CompleteDependency();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                ecb.DestroyEntity(e);
+            }).Schedule();
+            CompleteDependency();
+
         }
 
         private static void CreateArbiter(EntityCommandBuffer.ParallelWriter ecbParallel, Entity enemyPieceEntity,

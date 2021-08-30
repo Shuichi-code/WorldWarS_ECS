@@ -2,6 +2,7 @@ using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags.Single_Turn_Event_Tag;
 using Unity.Entities;
+using Unity.Jobs;
 
 namespace Assets.Scripts.Systems
 {
@@ -12,33 +13,32 @@ namespace Assets.Scripts.Systems
             var changeTurnQuery = GetEntityQuery(ComponentType.ReadOnly <ChangeTurnComponent>());
             if (changeTurnQuery.CalculateEntityCount() == 0) return;
             var currentTurnTeam = changeTurnQuery.GetSingleton<ChangeTurnComponent>().currentTurnTeam;
-            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
 
-            ChangeTurn(ecbParallel, currentTurnTeam);
+            var changeTurnJob = ChangeTurn(ecb, currentTurnTeam);
 
-            DestroyChangeTurnEntity(ecbParallel);
+            DestroyChangeTurnEntity(ecb, changeTurnJob);
         }
         /// <summary>
         /// Method for creating the entity that will trigger the system for checking if a flag has passed.
         /// </summary>
         /// <param name="entityInQueryIndex"></param>
         /// <param name="ecbParallel"></param>
-        private static void CreateFlagPassedCheckerEntity(int entityInQueryIndex,
-            EntityCommandBuffer.ParallelWriter ecbParallel)
+        private static void CreateFlagPassedCheckerEntity(EntityCommandBuffer ecbParallel)
         {
-            var checkFlagPassedCheckerEntity = ecbParallel.CreateEntity(entityInQueryIndex);
-            ecbParallel.AddComponent(entityInQueryIndex, checkFlagPassedCheckerEntity, new CheckFlagPassedTag());
+            var checkFlagPassedCheckerEntity = ecbParallel.CreateEntity();
+            ecbParallel.AddComponent( checkFlagPassedCheckerEntity, new CheckFlagPassedTag());
         }
 
-        private void ChangeTurn(EntityCommandBuffer.ParallelWriter ecbParallel, Team currentTurnTeam)
+        private JobHandle ChangeTurn(EntityCommandBuffer ecbParallel, Team currentTurnTeam)
         {
-            Entities.
-                ForEach((int entityInQueryIndex, ref GameManagerComponent gameManagerComponent) =>
+            var changeTurnJob = Entities.
+                ForEach((ref GameManagerComponent gameManagerComponent) =>
                 {
                     gameManagerComponent.teamToMove = SwapTeam(currentTurnTeam);
-                    CreateFlagPassedCheckerEntity(entityInQueryIndex, ecbParallel);
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                    CreateFlagPassedCheckerEntity( ecbParallel);
+                }).Schedule(Dependency);
+            return changeTurnJob;
         }
 
         private static Team SwapTeam(Team currentTurnTeam)
@@ -46,14 +46,16 @@ namespace Assets.Scripts.Systems
             return currentTurnTeam == Team.Invader ? Team.Defender : Team.Invader;
         }
 
-        private void DestroyChangeTurnEntity(EntityCommandBuffer.ParallelWriter ecbParallel)
+        private void DestroyChangeTurnEntity(EntityCommandBuffer ecb, JobHandle changeTurnJob)
         {
-            Entities.
+            var destroyChangeTurnEntityJob = Entities.
                 WithAll<ChangeTurnComponent>().
                 ForEach((Entity e, int entityInQueryIndex) => {
-                    ecbParallel.DestroyEntity(entityInQueryIndex,e);
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                    ecb.DestroyEntity(e);
+                }).Schedule(changeTurnJob);
+
+            destroyChangeTurnEntityJob.Complete();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
 
         }
     }

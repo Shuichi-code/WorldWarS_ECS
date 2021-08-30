@@ -2,8 +2,11 @@ using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
 using System;
+using System.Linq;
+using TMPro;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -13,6 +16,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
     /// <summary>
     /// System that handles the activation of their army's superpower
     /// </summary>
+    [UpdateAfter(typeof(ChargeAbilitySystem))]
     public class ActivateAbilitySystem : ParallelSystem
     {
         protected override void OnCreate()
@@ -188,17 +192,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             cellArrayPositions.Dispose();
         }
 
-        private void TagGeneralAsSpearTip(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
-        {
-            Entities.
-                WithAll<ChargedFiveStarGeneralTag, PlayerTag>().
-                ForEach((Entity e, int entityInQueryIndex) =>
-                {
-                    ecbParallelWriter.AddComponent(entityInQueryIndex, e, new SpearTipTag());
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
-        }
-
         private void HighlightSoldiersAroundGeneral(EntityCommandBuffer.ParallelWriter ecbParallelWriter,
             float3 validPosition1,
             float3 validPosition2, bool isGeneralAtFront = false)
@@ -311,6 +304,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
         private void ActivateOneShotOneKill(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
         {
+            var ecb = EcbSystem.CreateCommandBuffer();
             var roundedWorldPos = Location.GetRoundedMousePosition();
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
             //highlight all enemy pieces in red
@@ -323,14 +317,35 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
             var fightingEntitiesQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<PieceTag>());
             if (fightingEntitiesQuery.CalculateEntityCount() != 2) return;
-            var spyQuery = GetHighlightedPieceQuery<PlayerTag>();
-            var targetQuery = GetHighlightedPieceQuery<EnemyTag>();
-            var spyEntity = spyQuery.GetSingletonEntity();
-            var spyTeam = spyQuery.GetSingleton<TeamComponent>().myTeam;
-            var targetEntity = targetQuery.GetSingletonEntity();
-            var targetRank = targetQuery.GetSingleton<RankComponent>().Rank;
+            //get the spy entity of this round
+            var fightingEntityArray = fightingEntitiesQuery.ToEntityArray(Allocator.Temp);
+            var rankArray = GetComponentDataFromEntity<RankComponent>(true);
+            var teamArray = GetComponentDataFromEntity<TeamComponent>(true);
+            var spyEntity = new Entity();
+            var targetEntity = new Entity();
+            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
+            var teamToMove = gmQuery.GetSingleton<GameManagerComponent>().teamToMove;
+
+            foreach (var entity in fightingEntityArray)
+            {
+                if (rankArray[entity].Rank == Piece.Spy && teamArray[entity].myTeam == teamToMove)
+                {
+                    spyEntity = entity;
+                }
+                else
+                {
+                    targetEntity = entity;
+                }
+            }
+
+            var spyTeam = teamArray[spyEntity].myTeam;
+            var targetRank = rankArray[targetEntity].Rank;
             var playerQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
                 ComponentType.ReadOnly<TimeComponent>(), ComponentType.ReadOnly<TeamComponent>());
+            var enemyQuery = GetEntityQuery(ComponentType.ReadOnly<EnemyTag>(),
+                ComponentType.ReadOnly<TimeComponent>(), ComponentType.ReadOnly<TeamComponent>());
+            var playerTeam = teamArray[playerQuery.GetSingletonEntity()].myTeam;
+            var enemyTeam = teamArray[enemyQuery.GetSingletonEntity()].myTeam;
 
             var fightResult = FightCalculator.DetermineFightResult(Piece.Spy, targetRank);
             switch (fightResult)
@@ -347,10 +362,10 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                     EntityManager.AddComponent<RevealedTag>(targetEntity);
                     break;
                 case FightResult.FlagDestroyed:
-                    var ecb = EcbSystem.CreateCommandBuffer();
-                    var playerTeam = playerQuery.GetSingleton<TeamComponent>()
+
+                    var attackingTeam = teamArray[spyEntity]
                         .myTeam;
-                    ArbiterCheckingSystem.DeclareWinner(ecb, playerTeam);
+                    ArbiterCheckingSystem.DeclareWinner(ecb, attackingTeam);
                     break;
                 case FightResult.NoFight:
                     break;
@@ -358,35 +373,86 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                     throw new ArgumentOutOfRangeException();
             }
             //remove one bullet from the spy piece
-            EntityManager.RemoveComponent<BulletComponent>(spyEntity);
-            EntityManager.RemoveComponent<ChargeEventFiredTag>(playerQuery.GetSingletonEntity());
+            //EntityManager.RemoveComponent<BulletComponent>(spyEntity);
+            RemoveBulletFromAttackingSpy(ecb, spyEntity);
+            var removeChargeEventJob = RemoveChargeEventFiredTagFromPlayer(ecb, spyTeam);
+            //EntityManager.RemoveComponent<ChargeEventFiredTag>(playerQuery.GetSingletonEntity());
 
-            CheckBullets<PlayerTag>();
+            CheckPlayerBullets(playerTeam, removeChargeEventJob);
+            //CheckPlayerBullets<EnemyTag>(enemyTeam);
 
             RestoreNormalSystems();
             CreateSingleEvent<PieceOnCellUpdaterTag>();
             ChangeTurn(spyTeam);
         }
 
+        private void RemoveBulletFromAttackingSpy(EntityCommandBuffer ecb, Entity spyEntity)
+        {
+            EntityManager.RemoveComponent<BulletComponent>(spyEntity);
+        }
+
+        private JobHandle RemoveChargeEventFiredTagFromPlayer(EntityCommandBuffer ecbParallelWriter, Team currentTeam)
+        {
+            var removeChargeEventJob = Entities.WithAll<TimeComponent>().ForEach((Entity e, int entityInQueryIndex, in TeamComponent teamComponent) =>
+            {
+                if (teamComponent.myTeam == currentTeam)
+                {
+                    ecbParallelWriter.RemoveComponent<ChargeEventFiredTag>(e);
+                }
+            }).Schedule(Dependency);
+            //removeChargeEventJob.Complete();
+
+            return removeChargeEventJob;
+        }
+
         /// <summary>
         /// Method for removing the chargeability from player if the russian army has no more bullets
         /// </summary>
         /// <typeparam name="T">Type of Player</typeparam>
-        private void CheckBullets<T>() where T : struct, IComponentData
+        private void CheckPlayerBullets(Team currentTeam, JobHandle removeBulletJob)
         {
-            var bulletQuery = GetEntityQuery(ComponentType.ReadOnly<T>(),
-                ComponentType.ReadOnly<BulletComponent>());
+            var spyWithBulletsArray = new NativeArray<Entity>(1, Allocator.TempJob) {[0] = Entity.Null};
+            //Debug.Log("Bullets remaining: " + GetEntityQuery(ComponentType.ReadOnly<BulletComponent>(), ComponentType.ReadOnly<PlayerTag>()).CalculateEntityCount().ToString());
 
-            if (bulletQuery.CalculateEntityCount() != 0) return;
-            RemoveChargeFromPlayer<T>();
+            var checkSpyWithBulletsJob = Entities.
+                WithAll<PieceTag, BulletComponent, PlayerTag>().
+                WithNone<CapturedComponent>().
+                ForEach((Entity e, in TeamComponent teamComponent, in RankComponent rankComponent) =>
+            {
+                if (teamComponent.myTeam == currentTeam && rankComponent.Rank == Piece.Spy && (!HasComponent<PrisonerTag>(e)))
+                {
+                    spyWithBulletsArray[0] = e;
+                }
+            }).
+                Schedule(removeBulletJob);
+            checkSpyWithBulletsJob.Complete();
+            if (spyWithBulletsArray[0] == Entity.Null)
+            {
+                //Debug.Log("Removing Charge from Player!");
+                RemoveChargeFromTeam(currentTeam, checkSpyWithBulletsJob);
+            }
+            else
+            {
+                Debug.Log("Player still has bullets!");
+            }
+
+
+            spyWithBulletsArray.Dispose();
         }
 
-        private void RemoveChargeFromPlayer<T>()
+        private void RemoveChargeFromTeam(Team currentTeam, JobHandle removeBulletJob)
         {
-            var playerEntity =
-                GetEntityQuery(ComponentType.ReadOnly<T>(), ComponentType.ReadOnly<TimeComponent>())
-                    .GetSingletonEntity();
-            EntityManager.RemoveComponent<ChargedAbilityTag>(playerEntity);
+            var ecb = EcbSystem.CreateCommandBuffer();
+            Entities.
+                WithAll<TimeComponent>().
+                ForEach((Entity e, in TeamComponent teamComponent) =>
+            {
+                if (teamComponent.myTeam == currentTeam)
+                {
+                    ecb.RemoveComponent<ChargedAbilityTag>(e);
+                }
+            }).Schedule(removeBulletJob).Complete();
+            //Dependency.Complete();
         }
 
         private void ChangeTurn(Team currentTurnTeam)

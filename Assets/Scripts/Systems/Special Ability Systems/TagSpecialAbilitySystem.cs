@@ -3,6 +3,7 @@ using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine;
 
 namespace Assets.Scripts.Systems.Special_Ability_Systems
 {
@@ -23,6 +24,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
             var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
             if (entities.CalculateEntityCount() == 0) return;
+            Debug.Log("Number of Captured pieces: " + entities.CalculateEntityCount().ToString());
             TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
         }
 
@@ -87,10 +89,12 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
         private void TagPlayerWithSpecialAbilityForRussia(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
         {
-            Entities.WithAll<CapturedComponent>().WithAny<PlayerTag, EnemyTag>().ForEach(
-                (Entity e, in ArmyComponent armyComponent) =>
+            Entities.WithAll<CapturedComponent, PieceTag>().
+                //WithAny<PlayerTag, EnemyTag>().
+                ForEach((Entity e, int entityInQueryIndex, in ArmyComponent armyComponent) =>
                 {
                     if (armyComponent.army != Army.Russia) return;
+                    //Debug.Log("Adding Russia special ability tag!");
                     ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity, new SpecialAbilityComponent());
                 }).Schedule();
             Dependency.Complete();

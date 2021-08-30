@@ -60,7 +60,7 @@ namespace Assets.Scripts.Systems
 
                     ecb.DestroyEntity(arbiterEntity);
                 }).Schedule();
-            CompleteDependency();
+            Dependency.Complete();
         }
 
         private static bool IsThereAFight(ArbiterComponent arbiter)

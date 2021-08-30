@@ -15,7 +15,7 @@ namespace Assets.Scripts.Systems
             #region initializingdata
             var specialAbilityPlayerQuery = GetPlayerEntitiesWithSpecialAbilities();
             if (specialAbilityPlayerQuery.CalculateEntityCount() == 0) return;
-            var ecb = GetEcbParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
             var specialEntityArray = specialAbilityPlayerQuery.ToEntityArray(Allocator.Temp);
             var armyArray = specialAbilityPlayerQuery.ToComponentDataArray<ArmyComponent>(Allocator.Temp);
 
@@ -24,11 +24,6 @@ namespace Assets.Scripts.Systems
             ApplySpecialAbilityToArmy(armyArray, specialEntityArray);
             armyArray.Dispose();
             RemoveSpecialAbilityComponents(ecb);
-        }
-
-        private EntityCommandBuffer.ParallelWriter GetEcbParallelWriter()
-        {
-            return EcbSystem.CreateCommandBuffer().AsParallelWriter();
         }
 
         private void ApplySpecialAbilityToArmy(NativeArray<ArmyComponent> armyArray, NativeArray<Entity> specialEntityArray)
@@ -70,11 +65,15 @@ namespace Assets.Scripts.Systems
                 ComponentType.ReadOnly<TeamComponent>());
         }
 
-        private void RemoveSpecialAbilityComponents(EntityCommandBuffer.ParallelWriter ecb)
+        private void RemoveSpecialAbilityComponents(EntityCommandBuffer ecb)
         {
             Entities.WithAll<SpecialAbilityComponent>()
-                .ForEach((Entity e, int entityInQueryIndex) => { ecb.RemoveComponent<SpecialAbilityComponent>(entityInQueryIndex, e); }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                .ForEach((Entity e, int entityInQueryIndex) =>
+                {
+                    ecb.RemoveComponent<SpecialAbilityComponent>(e);
+                }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private void AddBulletToSpy<T>(Entity playerEntity)
@@ -92,7 +91,6 @@ namespace Assets.Scripts.Systems
                 EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());
                 break;
             }
-            pieceEntityArray.Dispose();
         }
 
         private EntityQuery GetPieceEntityQuery<T>()

@@ -1,10 +1,8 @@
 ﻿using Assets.Scripts.Class;
 using Assets.Scripts.Components;
-using Assets.Scripts.Systems;
 using Assets.Scripts.Tags;
 using System;
 using System.Linq;
-using Assets.Scripts.Systems.Special_Ability_Systems;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -36,9 +34,9 @@ namespace Assets.Scripts.Monobehaviours.Managers
         public const float PlayerClockDuration = float.MaxValue;
 
         public delegate void ActivateSystem(bool enabled);
-        public delegate void ActivateSingleSystem<T>(bool enabled);
-        public event ActivateSingleSystem<ArrangeArmySystem> SetArrangementSystemStatus;
-        public event ActivateSingleSystem<ActivateAbilitySystem> SetActivateAbilitySystemStatus;
+
+        public event ActivateSystem SetArrangementSystemStatus;
+        public event ActivateSystem SetActivateAbilitySystemStatus;
         public event ActivateSystem SetSystemStatus;
 
         public Player player { get; set; }
