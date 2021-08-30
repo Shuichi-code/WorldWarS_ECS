@@ -86,7 +86,7 @@ namespace Assets.Scripts.Systems
             {
                 var pieceEntity = pieceEntityArray[index];
                 var pieceRank = pieceRankArray[index].Rank;
-                if (HasComponent<BulletComponent>(pieceEntity) || pieceRank != Piece.Spy) continue;
+                if (HasComponent<BulletComponent>(pieceEntity) || pieceRank != Piece.Spy || HasComponent<PrisonerTag>(pieceEntity)) continue;
                 EntityManager.AddComponentData(pieceEntity, new BulletComponent());
                 EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());
                 break;

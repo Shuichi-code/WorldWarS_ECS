@@ -26,7 +26,7 @@ namespace Assets.Scripts.Systems
                     ecb.RemoveComponent<CapturedComponent>(e);
                     ecb.AddComponent<PrisonerTag>(e);
                     Debug.Log("Removing capture component for rank");
-                }).Run();
+                }).Schedule();
             CompleteDependency();
             //EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
