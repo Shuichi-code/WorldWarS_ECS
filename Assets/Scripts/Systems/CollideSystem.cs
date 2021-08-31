@@ -30,7 +30,7 @@ namespace Assets.Scripts.Systems
                     ForEach((Entity enemyPieceEntity,int entityInQueryIndex, ref Translation translation) =>
                     {
                         if (!Location.IsMatchLocation(playerPieceTranslation.Value, translation.Value)) return;
-                        Debug.Log("Collision detected!");
+                        //Debug.Log("Collision detected!");
                         CreateArbiter(ecb, enemyPieceEntity, playerPieceEntity, entityInQueryIndex);
                     }).Schedule();
                 //EcbSystem.AddJobHandleForProducer(Dependency);

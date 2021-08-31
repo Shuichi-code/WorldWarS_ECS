@@ -25,7 +25,7 @@ namespace Assets.Scripts.Systems
                     translation.Value = GameConstants.PrisonCoordinates;
                     ecb.RemoveComponent<CapturedComponent>(e);
                     ecb.AddComponent<PrisonerTag>(e);
-                    Debug.Log("Removing capture component for rank");
+                    //Debug.Log("Removing capture component for rank");
                 }).Schedule();
             CompleteDependency();
             //EcbSystem.AddJobHandleForProducer(this.Dependency);

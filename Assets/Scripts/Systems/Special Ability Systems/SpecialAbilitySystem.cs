@@ -4,7 +4,6 @@ using Assets.Scripts.Tags;
 using System;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
@@ -16,22 +15,22 @@ namespace Assets.Scripts.Systems
             var specialAbilityPlayerQuery = GetPlayerEntitiesWithSpecialAbilities();
             if (specialAbilityPlayerQuery.CalculateEntityCount() == 0) return;
             var ecb = EcbSystem.CreateCommandBuffer();
-            var specialEntityArray = specialAbilityPlayerQuery.ToEntityArray(Allocator.Temp);
+            var playerEntitiesWithSpecialAbilitiesArray = specialAbilityPlayerQuery.ToEntityArray(Allocator.Temp);
             var armyArray = specialAbilityPlayerQuery.ToComponentDataArray<ArmyComponent>(Allocator.Temp);
 
             #endregion
 
-            ApplySpecialAbilityToArmy(armyArray, specialEntityArray);
+            ApplySpecialAbilityToArmy(armyArray, playerEntitiesWithSpecialAbilitiesArray);
             armyArray.Dispose();
             RemoveSpecialAbilityComponents(ecb);
         }
 
-        private void ApplySpecialAbilityToArmy(NativeArray<ArmyComponent> armyArray, NativeArray<Entity> specialEntityArray)
+        private void ApplySpecialAbilityToArmy(NativeArray<ArmyComponent> armyArray, NativeArray<Entity> playerEntitiesWithSpecialAbilitiesArray)
         {
             for (var index = 0; index < armyArray.Length; index++)
             {
                 var army = armyArray[index];
-                var playerEntity = specialEntityArray[index];
+                var playerEntity = playerEntitiesWithSpecialAbilitiesArray[index];
                 switch (army.army)
                 {
                     case Army.America:
@@ -40,15 +39,15 @@ namespace Assets.Scripts.Systems
                         EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());
                         break;
                     case Army.Russia:
-
-                        if (HasComponent<PlayerTag>(playerEntity))
-                        {
-                            AddBulletToSpy<PlayerTag>(playerEntity);
-                        }
-                        else if (HasComponent<EnemyTag>(playerEntity))
-                        {
-                            AddBulletToSpy<EnemyTag>(playerEntity);
-                        }
+                        AddBulletToSpy(playerEntity);
+                        //if (HasComponent<PlayerTag>(playerEntity))
+                        //{
+                        //    AddBulletToSpy<PlayerTag>(playerEntity);
+                        //}
+                        //else if (HasComponent<EnemyTag>(playerEntity))
+                        //{
+                        //    AddBulletToSpy<EnemyTag>(playerEntity);
+                        //}
 
                         break;
                     default:
@@ -76,21 +75,36 @@ namespace Assets.Scripts.Systems
             //EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private void AddBulletToSpy<T>(Entity playerEntity)
+        private void AddBulletToSpy(Entity playerEntity)
         {
-            var pieceEntityQuery = GetPieceEntityQuery<T>();
-            if (pieceEntityQuery.CalculateEntityCount() == 0) return;
-            var pieceEntityArray = pieceEntityQuery.ToEntityArray(Allocator.Temp);
-            var pieceRankArray = pieceEntityQuery.ToComponentDataArray<RankComponent>(Allocator.Temp);
-            for (var index = 0; index < pieceEntityArray.Length; index++)
+            var ecb = EcbSystem.CreateCommandBuffer();
+            var spyToAddBulletArray = new NativeArray<Entity>(1, Allocator.TempJob) {[0] = Entity.Null};
+            spyToAddBulletArray = GetSpyToAddBullet(playerEntity, spyToAddBulletArray, ecb);
+
+            if (spyToAddBulletArray[0] != Entity.Null)
             {
-                var pieceEntity = pieceEntityArray[index];
-                var pieceRank = pieceRankArray[index].Rank;
-                if (HasComponent<BulletComponent>(pieceEntity) || pieceRank != Piece.Spy || HasComponent<PrisonerTag>(pieceEntity)) continue;
-                EntityManager.AddComponentData(pieceEntity, new BulletComponent());
-                EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());
-                break;
+                EntityManager.AddComponent<BulletComponent>(spyToAddBulletArray[0]);
             }
+            spyToAddBulletArray.Dispose();
+        }
+
+        private NativeArray<Entity> GetSpyToAddBullet(Entity playerEntity, NativeArray<Entity> spyToAddBulletArray, EntityCommandBuffer ecb)
+        {
+
+            Entities.WithAll<PieceTag>().WithNone<PrisonerTag, BulletComponent>().ForEach(
+                (Entity pieceEntity, in RankComponent pieceRankComponent) =>
+                {
+                    if (pieceRankComponent.Rank != Piece.Spy ||
+                        (((!HasComponent<PlayerTag>(playerEntity) || !HasComponent<PlayerTag>(pieceEntity))) &&
+                         (!HasComponent<EnemyTag>(playerEntity) || !HasComponent<EnemyTag>(pieceEntity)))) return;
+                    spyToAddBulletArray[0] = pieceEntity;
+                    if (!HasComponent<ChargedAbilityTag>(playerEntity))
+                    {
+                        ecb.AddComponent<ChargedAbilityTag>(playerEntity);
+                    }
+                }).Schedule();
+            CompleteDependency();
+            return spyToAddBulletArray;
         }
 
         private EntityQuery GetPieceEntityQuery<T>()

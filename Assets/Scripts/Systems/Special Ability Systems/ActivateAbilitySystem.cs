@@ -428,8 +428,9 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             checkSpyWithBulletsJob.Complete();
             if (spyWithBulletsArray[0] == Entity.Null)
             {
-                //Debug.Log("Removing Charge from Player!");
+                Debug.Log("Removing Charge from Player!");
                 RemoveChargeFromTeam(currentTeam, checkSpyWithBulletsJob);
+
             }
             else
             {

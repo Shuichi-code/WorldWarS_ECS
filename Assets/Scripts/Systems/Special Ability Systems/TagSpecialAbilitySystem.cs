@@ -21,10 +21,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
             TagPlayerWithSpecialAbilityForNazi(ecb, playerEntity, enemyEntity);
 
-
-            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
-            if (entities.CalculateEntityCount() == 0) return;
-            Debug.Log("Number of Captured pieces: " + entities.CalculateEntityCount().ToString());
+            //Debug.Log("Number of Captured pieces: " + entities.CalculateEntityCount().ToString());
             TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
         }
 
@@ -89,15 +86,67 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
         private void TagPlayerWithSpecialAbilityForRussia(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
         {
+
+            //get the pieces of both a player. if player is russia, has no more spies, and has charged ability tag, remove it.
+            CheckIfAllSpiesAreDead(ecb, playerEntity, enemyEntity);
+
+            var entities = GetEntityQuery(ComponentType.ReadOnly<CapturedComponent>());
+            if (entities.CalculateEntityCount() == 0) return;
+
             Entities.WithAll<CapturedComponent, PieceTag>().
                 //WithAny<PlayerTag, EnemyTag>().
                 ForEach((Entity e, int entityInQueryIndex, in ArmyComponent armyComponent) =>
                 {
-                    if (armyComponent.army != Army.Russia) return;
                     //Debug.Log("Adding Russia special ability tag!");
                     ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity, new SpecialAbilityComponent());
                 }).Schedule();
             Dependency.Complete();
+        }
+
+        private void CheckIfAllSpiesAreDead(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
+        {
+            //check if he still has spies
+            var spyWithBulletsArray = new NativeArray<Entity>(2, Allocator.TempJob) { [0] = Entity.Null, [1] = Entity.Null };
+            //Debug.Log("Bullets remaining: " + GetEntityQuery(ComponentType.ReadOnly<BulletComponent>(), ComponentType.ReadOnly<PlayerTag>()).CalculateEntityCount().ToString());
+
+            var checkAliveSpiesJob = Entities.WithAll<PieceTag, BulletComponent>().WithNone<CapturedComponent>().ForEach(
+                (Entity pieceEntity, in TeamComponent teamComponent, in RankComponent rankComponent, in ArmyComponent armyComponent) =>
+                {
+                    if (rankComponent.Rank == Piece.Spy && !HasComponent<PrisonerTag>(pieceEntity) && armyComponent.army == Army.Russia)
+                    {
+                        if (HasComponent<PlayerTag>(pieceEntity))
+                        {
+                            spyWithBulletsArray[0] = pieceEntity;
+                        }
+                        else if (HasComponent<EnemyTag>(pieceEntity))
+                        {
+                            spyWithBulletsArray[1] = pieceEntity;
+                        }
+                    }
+                }).Schedule(Dependency);
+            CompleteDependency();
+
+            //var armyArray = GetComponentDataFromEntity<ArmyComponent>(true);
+
+            Entities.WithAll<TimeComponent>().
+                WithAny<PlayerTag, EnemyTag>().
+                ForEach((Entity e, in ArmyComponent armyComponent) =>
+            {
+                if (((HasComponent<PlayerTag>(e) && spyWithBulletsArray[0] == Entity.Null) || (HasComponent<EnemyTag>(e) && spyWithBulletsArray[1] == Entity.Null)) && armyComponent.army == Army.Russia &&
+                    HasComponent<ChargedAbilityTag>(e))
+                {
+                    ecb.RemoveComponent<ChargedAbilityTag>(e);
+                    DeactivateChargeAbilityUI(ecb);
+                }
+            }).Schedule(checkAliveSpiesJob).Complete();
+
+            spyWithBulletsArray.Dispose();
+        }
+
+        private static void DeactivateChargeAbilityUI(EntityCommandBuffer ecb)
+        {
+            var chargedEventEntity = ecb.CreateEntity();
+            ecb.AddComponent(chargedEventEntity, new ChargedAbilityEventComponent() { activateUI = false });
         }
 
         private Entity GetPlayerEntity<T>()
