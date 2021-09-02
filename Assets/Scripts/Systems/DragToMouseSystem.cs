@@ -24,7 +24,7 @@ namespace Assets.Scripts.Systems
             var cellQuery = GetEntityQuery(ComponentType.ReadOnly<CellTag>(), ComponentType.ReadOnly<Translation>());
             var highlightedCellQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<Translation>());
             var enemyCellQuery = GetEntityQuery(ComponentType.ReadOnly<EnemyCellTag>(), ComponentType.ReadOnly<Translation>());
-            var ecbParallel = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
             NativeArray<Translation> cellTranslation = cellQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
             NativeArray<Translation> highlightedCellTranslationArray = highlightedCellQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
             NativeArray<Translation> enemyCellTranslationArray = enemyCellQuery.ToComponentDataArray<Translation>(Allocator.TempJob);
@@ -47,15 +47,15 @@ namespace Assets.Scripts.Systems
                         pieceTranslation.Value = math.round(pieceTranslation.Value);
                         originalLocation.originalLocation = pieceTranslation.Value;
 
-                        CheckForCollisions(ecbParallel, entityInQueryIndex);
+                        CheckForCollisions(ecb, entityInQueryIndex);
 
-                        ChangeTurn( ecbParallel, teamComponent, entityInQueryIndex);
-                        UpdatePiecesOnCells(ecbParallel, entityInQueryIndex);
+                        ChangeTurn( ecb, teamComponent, entityInQueryIndex);
+                        UpdatePiecesOnCells(ecb, entityInQueryIndex);
                     }
                     else
                         pieceTranslation.Value = originalLocation.originalLocation;
 
-                    ecbParallel.RemoveComponent<SelectedTag>(entityInQueryIndex, e);
+                    ecb.RemoveComponent<SelectedTag>( e);
                 }).Schedule();
                 CompleteDependency();
 
@@ -66,10 +66,10 @@ namespace Assets.Scripts.Systems
             cellEntities.Dispose();
         }
 
-        private static void CheckForCollisions(EntityCommandBuffer.ParallelWriter ecb, int entityInQueryIndex)
+        private static void CheckForCollisions(EntityCommandBuffer ecb, int entityInQueryIndex)
         {
-            var checkColliderEntity = ecb.CreateEntity(entityInQueryIndex);
-            ecb.AddComponent(entityInQueryIndex, checkColliderEntity, new PieceCollisionCheckerTag());
+            var checkColliderEntity = ecb.CreateEntity();
+            ecb.AddComponent(checkColliderEntity, new PieceCollisionCheckerTag());
         }
 
         /// <summary>
@@ -77,16 +77,16 @@ namespace Assets.Scripts.Systems
         /// </summary>
         /// <param name="ecbParallel"></param>
         /// <param name="entityInQueryIndex"></param>
-        private static void UpdatePiecesOnCells(EntityCommandBuffer.ParallelWriter ecbParallel, int entityInQueryIndex)
+        private static void UpdatePiecesOnCells(EntityCommandBuffer ecbParallel, int entityInQueryIndex)
         {
-            var pieceOnCellUpdaterEntity = ecbParallel.CreateEntity(entityInQueryIndex);
-            ecbParallel.AddComponent(entityInQueryIndex, pieceOnCellUpdaterEntity, new PieceOnCellUpdaterTag());
+            var pieceOnCellUpdaterEntity = ecbParallel.CreateEntity();
+            ecbParallel.AddComponent(pieceOnCellUpdaterEntity, new PieceOnCellUpdaterTag());
         }
 
-        private static void ChangeTurn(EntityCommandBuffer.ParallelWriter ecb, TeamComponent teamComponent, int entityInQueryIndex)
+        private static void ChangeTurn(EntityCommandBuffer ecb, TeamComponent teamComponent, int entityInQueryIndex)
         {
-            var changeTurnEntity = ecb.CreateEntity(entityInQueryIndex);
-            ecb.AddComponent(entityInQueryIndex, changeTurnEntity, new ChangeTurnComponent()
+            var changeTurnEntity = ecb.CreateEntity();
+            ecb.AddComponent( changeTurnEntity, new ChangeTurnComponent()
             {
                 currentTurnTeam = teamComponent.myTeam
             });

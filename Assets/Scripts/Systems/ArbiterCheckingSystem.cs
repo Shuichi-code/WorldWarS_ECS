@@ -1,11 +1,14 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
-using Assets.Scripts.Monobehaviours.Managers;
+using Assets.Scripts.Systems.Special_Ability_Systems;
+using Assets.Scripts.Tags;
 using Unity.Entities;
 using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
+    [UpdateAfter(typeof(CollideSystem))]
+    [UpdateBefore(typeof(UpdatePieceOnCellSystem))]
     //[DisableAutoCreation]
     public class ArbiterCheckingSystem : ParallelSystem
     {
@@ -58,9 +61,16 @@ namespace Assets.Scripts.Systems
                         }
                     }
 
+                    UpdatePieceOnCellComponents(ecb);
                     ecb.DestroyEntity(arbiterEntity);
                 }).Schedule();
             Dependency.Complete();
+        }
+
+        private static void UpdatePieceOnCellComponents(EntityCommandBuffer ecb)
+        {
+            var pieceOnCellUpdaterEntity = ecb.CreateEntity();
+            ecb.AddComponent<PieceOnCellUpdaterTag>(pieceOnCellUpdaterEntity);
         }
 
         private static bool IsThereAFight(ArbiterComponent arbiter)

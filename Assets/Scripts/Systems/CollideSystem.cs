@@ -4,10 +4,10 @@ using Assets.Scripts.Tags;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
+    [UpdateAfter(typeof(DragToMouseSystem))]
     public class CollideSystem : ParallelSystem
     {
         protected override void OnUpdate()
@@ -27,7 +27,7 @@ namespace Assets.Scripts.Systems
                 Entities.
                     WithAll<PieceTag, EnemyTag>().
                     WithNone<PrisonerTag>().
-                    ForEach((Entity enemyPieceEntity,int entityInQueryIndex, ref Translation translation) =>
+                    ForEach((Entity enemyPieceEntity, int entityInQueryIndex, ref Translation translation) =>
                     {
                         if (!Location.IsMatchLocation(playerPieceTranslation.Value, translation.Value)) return;
                         //Debug.Log("Collision detected!");

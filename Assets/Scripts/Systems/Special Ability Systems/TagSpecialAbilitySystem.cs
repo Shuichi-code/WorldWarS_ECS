@@ -1,8 +1,11 @@
 using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
+using System;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace Assets.Scripts.Systems.Special_Ability_Systems
@@ -15,28 +18,44 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var playerEntity = GetPlayerEntity<PlayerTag>();
             var enemyEntity = GetPlayerEntity<EnemyTag>();
 
-            RemoveSpecialAbilityForNazi(playerEntity, enemyEntity);
+            RemoveSpecialAbilityForNazi(ecb);
 
             if (HasComponent<ChargedAbilityTag>(playerEntity) && HasComponent<ChargedAbilityTag>(enemyEntity)) return;
 
             TagPlayerWithSpecialAbilityForNazi(ecb, playerEntity, enemyEntity);
-
-            //Debug.Log("Number of Captured pieces: " + entities.CalculateEntityCount().ToString());
             TagPlayerWithSpecialAbilityForRussia(ecb, playerEntity, enemyEntity);
         }
 
-        private void RemoveSpecialAbilityForNazi(Entity playerEntity, Entity enemyEntity)
+        private void RemoveSpecialAbilityForNazi(EntityCommandBuffer ecb)
         {
-            //if player's five star general has prisoner, remove player's charged ability
-            if (CheckFiveStar<PlayerTag>())
-            {
-                EntityManager.RemoveComponent<ChargedAbilityTag>(playerEntity);
-            }
-            else if (CheckFiveStar<EnemyTag>())
-            {
-                EntityManager.RemoveComponent<ChargedAbilityTag>(enemyEntity);
-            }
+            var teamToMove = GetTeamToMove();
 
+            var armyOfTeamToMove = GetArmyOfTeamToMove(teamToMove);
+            if (armyOfTeamToMove != Army.Nazi) return;
+            if (IsBatallionAtBorder(teamToMove)  ||
+                IsFiveStarGeneralDead(teamToMove))
+            {
+                RemoveChargedAbility(teamToMove, ecb);
+            }
+        }
+
+        private bool IsFiveStarGeneralDead(Team teamToMove)
+        {
+            var fiveStarEntityArray = new NativeArray<Entity>(1, Allocator.TempJob){[0]=Entity.Null};
+            Entities.
+                WithAll<PrisonerTag>().
+                ForEach((Entity pieceEntity, in RankComponent rankComponent, in TeamComponent teamComponent, in ArmyComponent armyComponent) =>
+            {
+                if (teamComponent.myTeam == teamToMove && rankComponent.Rank == Piece.FiveStarGeneral &&
+                    armyComponent.army == Army.Nazi)
+                {
+                    fiveStarEntityArray[0] = pieceEntity;
+                }
+            }).Schedule();
+            CompleteDependency();
+            var result = fiveStarEntityArray[0] != Entity.Null;
+            fiveStarEntityArray.Dispose();
+            return result;
         }
 
         private bool CheckFiveStar<T>()
@@ -59,29 +78,223 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
         private void TagPlayerWithSpecialAbilityForNazi(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
         {
-            Entities.WithAll<PieceTag>().ForEach(
-                (Entity e, in ArmyComponent armyComponent, in RankComponent rankComponent) =>
+            var teamToMove = GetTeamToMove();
+            Entities.
+                WithAll<PieceTag>().
+                ForEach((Entity pieceEntity, in ArmyComponent armyComponent, in RankComponent rankComponent, in TeamComponent teamComponent) =>
                 {
-                    if (armyComponent.army != Army.Nazi) return;
-                    if (rankComponent.Rank != Piece.FiveStarGeneral) return;
-                    if (!HasComponent<PrisonerTag>(e))
+                    if (armyComponent.army != Army.Nazi || rankComponent.Rank != Piece.FiveStarGeneral ||
+                        teamComponent.myTeam != teamToMove) return;
+                    if (!HasComponent<PrisonerTag>(pieceEntity))
                     {
-                        ecb.AddComponent<ChargedFiveStarGeneralTag>(e);
-                        ecb.AddComponent(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity,
+                        ecb.AddComponent<ChargedFiveStarGeneralTag>(pieceEntity);
+                        ecb.AddComponent(HasComponent<PlayerTag>(pieceEntity) ? playerEntity : enemyEntity,
                             new SpecialAbilityComponent());
                     }
-                    else
+                    else if ((HasComponent<PrisonerTag>(pieceEntity) && (HasComponent<ChargedAbilityTag>(playerEntity) ||
+                                                                         HasComponent<ChargedAbilityTag>(enemyEntity))))
                     {
-                        if (!HasComponent<ChargedAbilityTag>(playerEntity) &&
-                            !HasComponent<ChargedAbilityTag>(enemyEntity)) return;
-                        ecb.RemoveComponent<ChargedFiveStarGeneralTag>(e);
-                        ecb.RemoveComponent<ChargedAbilityTag>(HasComponent<PlayerTag>(e) ? playerEntity : enemyEntity);
+                        ecb.RemoveComponent<ChargedFiveStarGeneralTag>(pieceEntity);
+                        ecb.RemoveComponent<ChargedAbilityTag>(HasComponent<PlayerTag>(pieceEntity)
+                            ? playerEntity
+                            : enemyEntity);
                     }
-
                 }).Schedule();
             Dependency.Complete();
+        }
 
-            //if player no longer has five star general in prison but has charged ability component, remove charge ability component
+        private Army GetArmyOfTeamToMove(Team teamToMove)
+        {
+            var armyArray = new NativeArray<Army>(1, Allocator.TempJob);
+            Entities
+                .WithAll<TimeComponent>().
+                ForEach((Entity e, in ArmyComponent armyComponent, in TeamComponent teamComponent) =>
+            {
+                if (teamComponent.myTeam == teamToMove)
+                {
+                    armyArray[0] = armyComponent.army;
+                }
+            }).Schedule();
+            CompleteDependency();
+
+            var armyToMove = armyArray[0];
+            armyArray.Dispose();
+
+            return armyToMove;
+        }
+
+        private void RemoveChargedAbility(Team teamToMove, EntityCommandBuffer ecb)
+        {
+            Entities.
+                WithAll<TimeComponent>(). //the defining component for players
+                ForEach((Entity playerEntity, in TeamComponent teamComponent) =>
+                {
+                    if ((teamComponent.myTeam != teamToMove)) return;
+                    if(HasComponent<ChargedAbilityTag>(playerEntity))
+                        ecb.RemoveComponent<ChargedAbilityTag>(playerEntity);
+                    if(HasComponent<ChargeEventFiredTag>(playerEntity))
+                        ecb.RemoveComponent<ChargeEventFiredTag>(playerEntity);
+                    var chargeUIEntity = ecb.CreateEntity();
+                    ecb.AddComponent(chargeUIEntity, new ChargedAbilityEventComponent(){activateUI = false});
+                }).Schedule();
+            CompleteDependency();
+        }
+
+        private Team GetTeamToMove()
+        {
+            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
+            return gmQuery.GetSingleton<GameManagerComponent>().teamToMove;
+        }
+
+        private bool IsBatallionAtBorder(Team teamToMove)
+        {
+            var fiveStarGeneralLocation = GetFiveStarGeneralLocation(teamToMove);
+            var fiveStarGeneralEntity = GetFiveStarGeneralEntity(teamToMove);
+            var cellPositionArray = new NativeArray<Translation>(3, Allocator.TempJob);
+            cellPositionArray = SetPossibleValidLocation(cellPositionArray, fiveStarGeneralLocation.Value);
+            var foundPieceEntitiesArray = new NativeArray<Entity>(3, Allocator.TempJob);
+            foundPieceEntitiesArray = PopulateFoundEntitiesArray(cellPositionArray, foundPieceEntitiesArray);
+            var blitzFormation = GetBlitzFormation(foundPieceEntitiesArray);
+
+            var result = false;
+            var soldierInFrontLocation = new Translation();
+            var soldierEntity = new Entity();
+            switch (blitzFormation)
+            {
+                case BlitzkriegFormation.GeneralAtFront:
+                    //General must not be on a border
+                    result = IsSoldierAtBorder(fiveStarGeneralEntity, teamToMove);
+                    break;
+                case BlitzkriegFormation.GeneralInMiddle:
+                    //get the soldier location
+
+                    soldierInFrontLocation.Value = new float3(fiveStarGeneralLocation.Value.x,
+                        fiveStarGeneralLocation.Value.y + 1, fiveStarGeneralLocation.Value.z);
+                    soldierEntity = GetSoldierEntity(teamToMove, soldierInFrontLocation);
+                    result = IsSoldierAtBorder(soldierEntity, teamToMove);
+                    break;
+                case BlitzkriegFormation.GeneralAtBack:
+                    //The soldier in front must not be on a border cell
+                    soldierInFrontLocation.Value = new float3(fiveStarGeneralLocation.Value.x,
+                        fiveStarGeneralLocation.Value.y + 2, fiveStarGeneralLocation.Value.z);
+                    soldierEntity = GetSoldierEntity(teamToMove, soldierInFrontLocation);
+                    result = IsSoldierAtBorder(soldierEntity, teamToMove);
+                    break;
+                case BlitzkriegFormation.InvalidBlitz:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            cellPositionArray.Dispose();
+            foundPieceEntitiesArray.Dispose();
+            return result;
+        }
+
+        private bool IsSoldierAtBorder(Entity soldierEntity, Team teamToMove)
+        {
+            var cellMatchArray = new NativeArray<Entity>(1, Allocator.TempJob) { [0] = Entity.Null };
+            Entities.
+                WithAll<CellTag,LastCellsTag>().
+                ForEach((Entity cellEntity, in Translation cellTranslation, in HomeCellComponent homeCellComponent, in PieceOnCellComponent pieceOnCellComponent) =>
+            {
+                if (pieceOnCellComponent.PieceEntity.Equals(soldierEntity) && homeCellComponent.homeTeam != teamToMove)
+                {
+                    cellMatchArray[0] = cellEntity;
+                }
+            }).Schedule();
+            CompleteDependency();
+            var result = cellMatchArray[0] != Entity.Null;
+            cellMatchArray.Dispose();
+            return result;
+        }
+
+        private NativeArray<Entity> PopulateFoundEntitiesArray(NativeArray<Translation> possibleValidLocationArray, NativeArray<Entity> foundPieceEntitiesArray)
+        {
+            SetEntityArrayToNull(foundPieceEntitiesArray);
+
+            //WARNING: This needs to be scheduled only so as to not create race condition due to the for loop inside the job.
+            Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity pieceEntity, in Translation pieceTranslation) =>
+            {
+                for (var index = 0; index < possibleValidLocationArray.Length; index++)
+                {
+                    var possibleValidLocation = possibleValidLocationArray[index].Value;
+                    if (Location.IsMatchLocation(possibleValidLocation, pieceTranslation.Value))
+                    {
+                        foundPieceEntitiesArray[index] = pieceEntity;
+                    }
+                }
+
+            }).Schedule();
+            this.CompleteDependency();
+            return foundPieceEntitiesArray;
+        }
+
+        public static void SetEntityArrayToNull(NativeArray<Entity> foundPieceEntitiesArray)
+        {
+            for (var index = 0; index < foundPieceEntitiesArray.Length; index++)
+            {
+                foundPieceEntitiesArray[index] = Entity.Null;
+            }
+        }
+
+        private Translation GetFiveStarGeneralLocation(Team currentTeam)
+        {
+            var translationArray = new NativeArray<Translation>(1, Allocator.TempJob);
+            Entities.
+                WithAll<PieceTag>().
+                WithNone<PrisonerTag, CapturedComponent>().
+                ForEach((Entity pieceEntity, in RankComponent rankComponent, in TeamComponent teamComponent, in Translation translation) =>
+            {
+                if (teamComponent.myTeam == currentTeam && rankComponent.Rank == Piece.FiveStarGeneral)
+                {
+                    translationArray[0] = translation;
+                }
+            }).Schedule();
+            CompleteDependency();
+            var generalLocation = translationArray[0];
+            //Debug.Log("Five-Star y-Location is: " + generalLocation.Value.y);
+            translationArray.Dispose();
+            return generalLocation;
+        }
+
+        private Entity GetFiveStarGeneralEntity(Team currentTeam)
+        {
+            var entityArray = new NativeArray<Entity>(1, Allocator.TempJob);
+            Entities.
+                WithAll<PieceTag>().
+                WithNone<PrisonerTag, CapturedComponent>().
+                ForEach((Entity pieceEntity, in RankComponent rankComponent, in TeamComponent teamComponent) =>
+                {
+                    if (teamComponent.myTeam == currentTeam && rankComponent.Rank == Piece.FiveStarGeneral)
+                    {
+                        entityArray[0] = pieceEntity;
+                    }
+                }).Schedule();
+            CompleteDependency();
+            var generalEntity = entityArray[0];
+            //Debug.Log("Five-Star y-Location is: " + generalLocation.Value.y);
+            entityArray.Dispose();
+            return generalEntity;
+        }
+
+        private Entity GetSoldierEntity(Team currentTeam, Translation soldierTranslation)
+        {
+            var entityArray = new NativeArray<Entity>(1, Allocator.TempJob);
+            Entities.
+                WithAll<PieceTag>().
+                WithNone<PrisonerTag, CapturedComponent>().
+                ForEach((Entity pieceEntity, in TeamComponent teamComponent, in Translation pieceTranslation) =>
+                {
+                    if (teamComponent.myTeam == currentTeam && Location.IsMatchLocation(pieceTranslation.Value, soldierTranslation.Value))
+                    {
+                        entityArray[0] = pieceEntity;
+                    }
+                }).Schedule();
+            CompleteDependency();
+            var generalEntity = entityArray[0];
+            //Debug.Log("Five-Star y-Location is: " + generalLocation.Value.y);
+            entityArray.Dispose();
+            return generalEntity;
         }
 
         private void TagPlayerWithSpecialAbilityForRussia(EntityCommandBuffer ecb, Entity playerEntity, Entity enemyEntity)
@@ -162,6 +375,37 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         private T GetPlayerComponent<T>() where T : struct, IComponentData
         {
             return GetPlayerEntityQuery<PlayerTag>().GetSingleton<T>();
+        }
+
+        public static NativeArray<Translation> SetPossibleValidLocation(NativeArray<Translation> cellPositionArray, float3 fiveStarGeneralTranslation)
+        {
+            for (var i = 0; i < cellPositionArray.Length; i++)
+            {
+                cellPositionArray[i] = new Translation()
+                {
+                    Value = new float3(fiveStarGeneralTranslation.x, fiveStarGeneralTranslation.y + (i + 1), fiveStarGeneralTranslation.z)
+                };
+            }
+            return cellPositionArray;
+        }
+
+        public static BlitzkriegFormation GetBlitzFormation(NativeArray<Entity> foundPieceEntitiesArray)
+        {
+            if (foundPieceEntitiesArray[0] == Entity.Null)
+            {
+                return BlitzkriegFormation.GeneralAtFront;
+            }
+            else if (foundPieceEntitiesArray[0] != Entity.Null && foundPieceEntitiesArray[1] == Entity.Null)
+            {
+                return BlitzkriegFormation.GeneralInMiddle;
+            }
+            else if (foundPieceEntitiesArray[0] != Entity.Null && foundPieceEntitiesArray[1] != Entity.Null &&
+                     foundPieceEntitiesArray[2] == Entity.Null)
+            {
+                return BlitzkriegFormation.GeneralAtBack;
+            }
+
+            return BlitzkriegFormation.InvalidBlitz;
         }
     }
 }

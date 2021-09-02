@@ -2,8 +2,6 @@ using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Tags;
 using System;
-using System.Linq;
-using TMPro;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -31,23 +29,24 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             if (chargedPlayerQuery.CalculateEntityCount() == 0) return;
             var chargedPlayerEntity = chargedPlayerQuery.GetSingletonEntity();
             var playerArmy = GetComponent<ArmyComponent>(chargedPlayerEntity);
-            var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecbParallelWriter = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+            var ecb = EcbSystem.CreateCommandBuffer();
             //switch statement
             switch (playerArmy.army)
             {
                 case Army.America:
                     break;
                 case Army.Nazi:
-                    CommenceBlitzkrieg(ecb);
+                    CommenceBlitzkrieg(ecbParallelWriter,ecb);
                     break;
                 case Army.Russia:
-                    ActivateOneShotOneKill(ecb);
+                    ActivateOneShotOneKill(ecbParallelWriter,ecb);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
-        private void CommenceBlitzkrieg(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void CommenceBlitzkrieg(EntityCommandBuffer.ParallelWriter ecbParallelWriter, EntityCommandBuffer ecb)
         {
             var roundedWorldPos = Location.GetRoundedMousePosition();
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
@@ -68,16 +67,16 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var chargedFiveStarTranslation = chargedFiveStarQuery.GetSingleton<Translation>();
             var chargedFiveStarTeam = chargedFiveStarQuery.GetSingleton<TeamComponent>().myTeam;
             if (!Location.IsMatchLocation(chargedFiveStarTranslation.Value, roundedWorldPos)) return;
-            ChargeBatallion(ecbParallelWriter);
+            ChargeBatallion(ecb);
             var spearTipQuery = GetEntityQuery(ComponentType.ReadOnly<SpearTipTag>(),
                 ComponentType.ReadOnly<Translation>(), ComponentType.ReadOnly<RankComponent>(), ComponentType.ReadOnly<TeamComponent>());
             if (spearTipQuery.CalculateEntityCount() == 0) return;
 
 
             CreateSingleEvent<PieceCollisionCheckerTag>();
-            ChangeTurn(chargedFiveStarTeam);
-            RemoveNaziSpecialAbilityTags(ecbParallelWriter);
             CreateSingleEvent<PieceOnCellUpdaterTag>();
+            ChangeTurn(chargedFiveStarTeam);
+            RemoveNaziSpecialAbilityTags(ecb);
             RestoreNormalSystems();
         }
         private void CreateSingleEvent<T>()
@@ -85,24 +84,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             EntityManager.CreateEntity(typeof(T));
         }
 
-        private void CheckIfBatallionIsInBattle(EntityCommandBuffer.ParallelWriter ecbParallelWriter, EntityQuery spearTipQuery)
-        {
-            var spearTipLocation = spearTipQuery.GetSingleton<Translation>().Value;
-            var spearTipEntity = spearTipQuery.GetSingletonEntity();
-            Entities.
-                WithAll<PieceTag, EnemyTag>().
-                WithNone<PrisonerTag>().
-                ForEach((Entity e, int entityInQueryIndex, in Translation translation) =>
-                {
-                    if (!Location.IsMatchLocation(spearTipLocation, translation.Value)) return;
-                    Debug.Log("Commencing Battle!");
-                    ecbParallelWriter.AddComponent(entityInQueryIndex, e, new FighterTag());
-                    ecbParallelWriter.AddComponent(entityInQueryIndex, spearTipEntity, new FighterTag());
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
-        }
-
-        private void RemoveNaziSpecialAbilityTags(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void RemoveNaziSpecialAbilityTags(EntityCommandBuffer ecb)
         {
             Entities.
                 WithAny<SpearTipTag, ChargedFiveStarGeneralTag>().
@@ -110,28 +92,30 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             {
                 if (HasComponent<SpearTipTag>(e))
                 {
-                    Tag.RemoveTag<SpearTipTag>(ecbParallelWriter, entityInQueryIndex, e);
+                    ecb.RemoveComponent<SpearTipTag>(e);
                 }
                 else if (HasComponent<ChargedFiveStarGeneralTag>(e))
                 {
-                    Tag.RemoveTag<ChargedFiveStarGeneralTag>(ecbParallelWriter, entityInQueryIndex, e);
+                    ecb.RemoveComponent<ChargedFiveStarGeneralTag>(e);
                 }
-            }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+            }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private void ChargeBatallion(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void ChargeBatallion(EntityCommandBuffer ecb)
         {
             Entities.WithAll<HighlightedTag, PieceTag, PlayerTag>()
                 .ForEach((Entity e, int entityInQueryIndex, ref Translation translation) =>
                 {
-                    translation.Value.y++;
-                    ecbParallelWriter.SetComponent(entityInQueryIndex, e, new OriginalLocationComponent()
+                    translation.Value.y += 1;
+                    ecb.SetComponent( e, new OriginalLocationComponent()
                     {
                         originalLocation = translation.Value
                     });
-                }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(Dependency);
+                }).Schedule();
+            CompleteDependency();
+            //EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
         private void HighlightBatallion(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
@@ -166,7 +150,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                             rearUnitPosition = new float3(chargedFiveStarGeneralTranslation.Value.x,
                             chargedFiveStarGeneralTranslation.Value.y - 2, chargedFiveStarGeneralTranslation.Value.z);
                         isGeneralAtFront = true;
-                        //TagGeneralAsSpearTip(ecbParallelWriter);
+                        //TagGeneralAsSpearTip(ecb);
                         break;
                     case BlitzkriegFormation.GeneralInMiddle:
                         frontUnitPosition.Value = new float3(chargedFiveStarGeneralTranslation.Value.x,
@@ -215,7 +199,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private BlitzkriegFormation GetBlitzFormation(NativeArray<Entity> foundPieceEntitiesArray)
+        public static BlitzkriegFormation GetBlitzFormation(NativeArray<Entity> foundPieceEntitiesArray)
         {
             if (foundPieceEntitiesArray[0] == Entity.Null)
             {
@@ -246,14 +230,14 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             SetEntityArrayToNull(foundPieceEntitiesArray);
 
             //WARNING: This needs to be scheduled only so as to not create race condition due to the for loop inside the job.
-            Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity e, in Translation translation) =>
+            Entities.WithAll<PlayerTag, PieceTag>().ForEach((Entity pieceEntity, in Translation pieceTranslation) =>
             {
                 for (var index = 0; index < possibleValidLocationArray.Length; index++)
                 {
                     var possibleValidLocation = possibleValidLocationArray[index].Value;
-                    if (Location.IsMatchLocation(possibleValidLocation, translation.Value))
+                    if (Location.IsMatchLocation(possibleValidLocation, pieceTranslation.Value))
                     {
-                        foundPieceEntitiesArray[index] = e;
+                        foundPieceEntitiesArray[index] = pieceEntity;
                     }
                 }
 
@@ -262,7 +246,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             return foundPieceEntitiesArray;
         }
 
-        private void SetEntityArrayToNull(NativeArray<Entity> foundPieceEntitiesArray)
+        public static void SetEntityArrayToNull(NativeArray<Entity> foundPieceEntitiesArray)
         {
             for (var index = 0; index < foundPieceEntitiesArray.Length; index++)
             {
@@ -276,7 +260,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         /// <param name="cellPositionArray"></param>
         /// <param name="fiveStarGeneralTranslation"></param>
         /// <returns></returns>
-        private static NativeArray<Translation> SetPossibleValidLocation(NativeArray<Translation> cellPositionArray, float3 fiveStarGeneralTranslation)
+        public static NativeArray<Translation> SetPossibleValidLocation(NativeArray<Translation> cellPositionArray, float3 fiveStarGeneralTranslation)
         {
             for (var i = 0; i < cellPositionArray.Length; i++)
             {
@@ -302,9 +286,8 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             EcbSystem.AddJobHandleForProducer(Dependency);
         }
 
-        private void ActivateOneShotOneKill(EntityCommandBuffer.ParallelWriter ecbParallelWriter)
+        private void ActivateOneShotOneKill(EntityCommandBuffer.ParallelWriter ecbParallelWriter, EntityCommandBuffer ecb)
         {
-            var ecb = EcbSystem.CreateCommandBuffer();
             var roundedWorldPos = Location.GetRoundedMousePosition();
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
             //highlight all enemy pieces in red
@@ -411,7 +394,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
         /// <typeparam name="T">Type of Player</typeparam>
         private void CheckPlayerBullets(Team currentTeam, JobHandle removeBulletJob)
         {
-            var spyWithBulletsArray = new NativeArray<Entity>(1, Allocator.TempJob) {[0] = Entity.Null};
+            var spyWithBulletsArray = new NativeArray<Entity>(1, Allocator.TempJob) { [0] = Entity.Null };
             //Debug.Log("Bullets remaining: " + GetEntityQuery(ComponentType.ReadOnly<BulletComponent>(), ComponentType.ReadOnly<PlayerTag>()).CalculateEntityCount().ToString());
 
             var checkSpyWithBulletsJob = Entities.

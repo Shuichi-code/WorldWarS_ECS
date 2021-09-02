@@ -21,33 +21,45 @@ public class HighlightCellSystem : ParallelSystem
 
 
         var ecb = EcbSystem.CreateCommandBuffer().AsParallelWriter();
+        var cellArrayPositions = new NativeArray<float3>(4, Allocator.TempJob);
+        cellArrayPositions = SetPossibleValidMoves(selectedPieceTranslation, cellArrayPositions);
+
 
         Entities
             .WithAll<CellTag>()
             .ForEach((Entity e, int entityInQueryIndex, in Translation cellTranslation) =>
             {
-                var cellArrayPositions = new NativeArray<float3>(4, Allocator.Temp);
-                cellArrayPositions = SetPossibleValidMoves(selectedPieceTranslation, cellArrayPositions);
+
                 var i = 0;
                 while (i < cellArrayPositions.Length)
                 {
                     if (Location.IsMatchLocation(cellArrayPositions[i], cellTranslation.Value))
                     {
                         if (!HasComponent<PieceOnCellComponent>(e))
-                            Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, e);
+                        {
+                            if (!HasComponent<HighlightedTag>(e))
+                            {
+                                Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, e);
+                            }
+                        }
+
                         else
                         {
                             var pieceOnCellArray = GetComponentDataFromEntity<PieceOnCellComponent>(true);
                             var teamArray = GetComponentDataFromEntity<TeamComponent>(true);
                             var cellPieceTeam = teamArray[pieceOnCellArray[e].PieceEntity].myTeam;
                             if (selectedPieceTeam != cellPieceTeam)
-                                Tag.AddTag<EnemyCellTag>(ecb, entityInQueryIndex, e);
+                            {
+                                if (!HasComponent<EnemyCellTag>(e))
+                                {
+                                    Tag.AddTag<EnemyCellTag>(ecb, entityInQueryIndex, e);
+                                }
+                            }
                         }
                     }
                     i++;
                 }
-                cellArrayPositions.Dispose();
-            }).Schedule();
+            }).WithDisposeOnCompletion(cellArrayPositions).Schedule();
             CompleteDependency();
             //EcbSystem.AddJobHandleForProducer(Dependency);
     }

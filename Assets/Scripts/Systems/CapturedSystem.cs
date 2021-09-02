@@ -1,13 +1,9 @@
-using System;
-using Assets.Scripts.Class;
 using Assets.Scripts.Components;
 using Assets.Scripts.Monobehaviours.Managers;
 using Assets.Scripts.Systems.Special_Ability_Systems;
 using Assets.Scripts.Tags;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Assets.Scripts.Systems
 {
@@ -20,9 +16,10 @@ namespace Assets.Scripts.Systems
 
             Entities
                 .WithAll<CapturedComponent>()
-                .ForEach((Entity e, int entityInQueryIndex, ref Translation translation, in RankComponent rankComponent) =>
+                .ForEach((Entity e, int entityInQueryIndex, ref Translation translation, ref OriginalLocationComponent originalLocationComponent, in RankComponent rankComponent) =>
                 {
                     translation.Value = GameConstants.PrisonCoordinates;
+                    originalLocationComponent.originalLocation = translation.Value;
                     ecb.RemoveComponent<CapturedComponent>(e);
                     ecb.AddComponent<PrisonerTag>(e);
                     //Debug.Log("Removing capture component for rank");
