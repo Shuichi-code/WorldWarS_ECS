@@ -59,7 +59,7 @@ namespace Assets.Scripts.Systems
                     {
                         var pieceEntity = GetSwapEntity(cellTranslation, firstTranslation, secondEntity, firstEntity);
 
-                        ecb.SetComponent<PieceOnCellComponent>(entityInQueryIndex, cellEntity, new PieceOnCellComponent
+                        ecb.SetComponent(entityInQueryIndex, cellEntity, new PieceOnCellComponent
                         {
                             PieceEntity = pieceEntity
                         });
@@ -70,15 +70,14 @@ namespace Assets.Scripts.Systems
                             ecb.RemoveComponent<PieceOnCellComponent>(entityInQueryIndex, cellEntity);
 
                         else
-                            ecb.AddComponent<PieceOnCellComponent>(entityInQueryIndex, cellEntity, new PieceOnCellComponent
+                            ecb.AddComponent(entityInQueryIndex, cellEntity, new PieceOnCellComponent
                             {
                                 PieceEntity = firstEntity
                             });
                     }
                 }).ScheduleParallel();
-            EcbSystem.AddJobHandleForProducer(this.Dependency);
+            EcbSystem.AddJobHandleForProducer(Dependency);
         }
-
 
         private void HighlightClickedEntities(float3 roundedWorldPos, bool mouseButtonPressed, EntityCommandBuffer.ParallelWriter ecb)
         {
@@ -88,10 +87,18 @@ namespace Assets.Scripts.Systems
             Entities.WithAny<CellTag, PieceTag, HomeCellComponent>().ForEach(
                 (Entity cellEntity, int entityInQueryIndex, in Translation cellTranslation) =>
                 {
-                    var pieceTeam = HasComponent<PieceTag>(cellEntity) ? GetComponent<TeamComponent>(cellEntity).myTeam : Team.Null;
-                    var cellTeam = HasComponent<HomeCellComponent>(cellEntity)
-                        ? GetComponent<HomeCellComponent>(cellEntity).homeTeam
-                        : Team.Null;
+                    var pieceTeam = new Team();
+                    var cellTeam = new Team();
+
+                    if (HasComponent<PieceTag>(cellEntity))
+                    {
+                        pieceTeam = GetComponent<TeamComponent>(cellEntity).myTeam;
+                    }
+                    else if (HasComponent<HomeCellComponent>(cellEntity))
+                    {
+                        cellTeam = GetComponent<HomeCellComponent>(cellEntity).homeTeam;
+                    }
+
 
                     var pieceRoundedLocation = math.round(cellTranslation.Value);
                     if (Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) && mouseButtonPressed &&
@@ -120,8 +127,8 @@ namespace Assets.Scripts.Systems
         private static float3 GetNewPieceLocation(Translation firstTranslation, Translation secondTranslation, Translation pieceTranslation)
         {
             return Location.IsMatchLocation(pieceTranslation.Value, firstTranslation.Value)
-                ? secondTranslation.Value
-                : firstTranslation.Value;
+                ? new float3(secondTranslation.Value.x, secondTranslation.Value.y, 0f)
+                : new float3(firstTranslation.Value.x, firstTranslation.Value.y, 0f);
         }
 
         private static Entity GetSwapEntity(Translation cellTranslation, Translation firstTranslation, Entity secondEntity, Entity firstEntity)

@@ -84,9 +84,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
         }
         public void CreateGameWorld(FixedString32 chosenOpening)
         {
-            var enemyTeam = SwapTeam(player.Team);
-            var enemyArmy = Army.Russia;//RandomizeArmy();
-            var enemyOpening = RandomizeOpening();
+            var enemyTeam = InitializeEnemyArmy(out var enemyArmy, out var enemyOpening);
 
             CreatePlayer<PlayerTag>(player.Team, player.Army);
             CreatePlayer<EnemyTag>(enemyTeam, enemyArmy);
@@ -96,6 +94,29 @@ namespace Assets.Scripts.Monobehaviours.Managers
             pieceManager.CreatePlayerPieces(enemyOpening, enemyTeam, enemyArmy, false);
             pieceManager.CreatePlayerPieces(chosenOpening, player.Team, player.Army);
             SetArrangementStatus(true);
+        }
+
+        private Team InitializeEnemyArmy(out Army enemyArmy, out string enemyOpening)
+        {
+            var enemyTeam = SwapTeam(player.Team);
+            enemyArmy = RandomizeArmy();
+            enemyArmy = CheckForPhilippineArmy(enemyArmy);
+            enemyOpening = RandomizeOpening();
+            return enemyTeam;
+        }
+
+        private Army CheckForPhilippineArmy(Army enemyArmy)
+        {
+            if (enemyArmy != Army.Philippines && player.Army == Army.Philippines)
+            {
+                player.Army = enemyArmy;
+            }
+            else if (player.Army != Army.Philippines && enemyArmy == Army.Philippines)
+            {
+                enemyArmy = player.Army;
+            }
+
+            return enemyArmy;
         }
 
         private static Army RandomizeArmy()

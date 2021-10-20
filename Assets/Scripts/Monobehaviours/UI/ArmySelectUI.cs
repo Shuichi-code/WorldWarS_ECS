@@ -34,9 +34,13 @@ public class ArmySelectUI : MonoBehaviour
 
 
         armyListView = VisualElementsUtility.InitializeList(new Dictionaries().armyList, ArmyListName);
+        armyListView.selectedIndex = 0;
         armyListVisualElement.Add(armyListView);
         teamListView = VisualElementsUtility.InitializeList(new Dictionaries().teamList, TeamListName);
+        teamListView.selectedIndex = 0;
         teamListVisualElement.Add(teamListView);
+
+
     }
 
     private void ReturnToTitle()

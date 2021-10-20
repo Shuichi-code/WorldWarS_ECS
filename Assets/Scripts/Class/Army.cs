@@ -2,7 +2,7 @@
 {
     public enum Army
     {
-        America,
+        Philippines,
         Nazi,
         Russia
     }

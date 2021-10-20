@@ -34,13 +34,13 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             //switch statement
             switch (playerArmy.army)
             {
-                case Army.America:
+                case Army.Philippines:
                     break;
                 case Army.Nazi:
-                    CommenceBlitzkrieg(ecbParallelWriter,ecb);
+                    CommenceBlitzkrieg(ecbParallelWriter, ecb);
                     break;
                 case Army.Russia:
-                    ActivateOneShotOneKill(ecbParallelWriter,ecb);
+                    ActivateOneShotOneKill(ecbParallelWriter, ecb);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -109,7 +109,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 .ForEach((Entity e, int entityInQueryIndex, ref Translation translation) =>
                 {
                     translation.Value.y += 1;
-                    ecb.SetComponent( e, new OriginalLocationComponent()
+                    ecb.SetComponent(e, new OriginalLocationComponent()
                     {
                         originalLocation = translation.Value
                     });
@@ -288,14 +288,17 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
         private void ActivateOneShotOneKill(EntityCommandBuffer.ParallelWriter ecbParallelWriter, EntityCommandBuffer ecb)
         {
-            var roundedWorldPos = Location.GetRoundedMousePosition();
+            var roundedMouseWorldPosition = Location.GetRoundedMousePosition();
             var mouseButtonPressed = Input.GetMouseButtonDown(0);
             //highlight all enemy pieces in red
             var enemyCellQuery = GetEntityQuery(ComponentType.ReadOnly<EnemyCellTag>());
             if (enemyCellQuery.CalculateEntityCount() == 0)
                 HighlightEnemyPieces(ecbParallelWriter);
 
-            HighlightClickedEntities(roundedWorldPos, mouseButtonPressed, ecbParallelWriter, Army.Russia);
+            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
+            var teamToMove = gmQuery.GetSingleton<GameManagerComponent>().teamToMove;
+
+            HighlightClickedEntities(roundedMouseWorldPosition, mouseButtonPressed, ecbParallelWriter, teamToMove);
 
 
             var fightingEntitiesQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>(), ComponentType.ReadOnly<PieceTag>());
@@ -306,8 +309,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             var teamArray = GetComponentDataFromEntity<TeamComponent>(true);
             var spyEntity = new Entity();
             var targetEntity = new Entity();
-            var gmQuery = GetEntityQuery(ComponentType.ReadOnly<GameManagerComponent>());
-            var teamToMove = gmQuery.GetSingleton<GameManagerComponent>().teamToMove;
+
 
             foreach (var entity in fightingEntityArray)
             {
@@ -321,7 +323,6 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
                 }
             }
 
-            var spyTeam = teamArray[spyEntity].myTeam;
             var targetRank = rankArray[targetEntity].Rank;
             var playerQuery = GetEntityQuery(ComponentType.ReadOnly<PlayerTag>(),
                 ComponentType.ReadOnly<TimeComponent>(), ComponentType.ReadOnly<TeamComponent>());
@@ -358,7 +359,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             //remove one bullet from the spy piece
             //EntityManager.RemoveComponent<BulletComponent>(spyEntity);
             RemoveBulletFromAttackingSpy(ecb, spyEntity);
-            var removeChargeEventJob = RemoveChargeEventFiredTagFromPlayer(ecb, spyTeam);
+            var removeChargeEventJob = RemoveChargeEventFiredTagFromPlayer(ecb, teamToMove);
             //EntityManager.RemoveComponent<ChargeEventFiredTag>(playerQuery.GetSingletonEntity());
 
             CheckPlayerBullets(playerTeam, removeChargeEventJob);
@@ -366,7 +367,7 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
 
             RestoreNormalSystems();
             CreateSingleEvent<PieceOnCellUpdaterTag>();
-            ChangeTurn(spyTeam);
+            ChangeTurn(teamToMove);
         }
 
         private void RemoveBulletFromAttackingSpy(EntityCommandBuffer ecb, Entity spyEntity)
@@ -493,56 +494,65 @@ namespace Assets.Scripts.Systems.Special_Ability_Systems
             }).ScheduleParallel();
             EcbSystem.AddJobHandleForProducer(Dependency);
         }
-        private void HighlightClickedEntities(float3 roundedWorldPos, bool mouseButtonPressed, EntityCommandBuffer.ParallelWriter ecb, Army army)
+
+        /// <summary>
+        /// Method for Russian army that highlights the clicked pieces when the special ability is activated
+        /// </summary>
+        /// <param name="roundedMouseWorldPosition"></param>
+        /// <param name="mouseButtonPressed"></param>
+        /// <param name="ecb"></param>
+        /// <param name="teamToMove"></param>
+        private void HighlightClickedEntities(float3 roundedMouseWorldPosition, bool mouseButtonPressed, EntityCommandBuffer.ParallelWriter ecb, Team teamToMove)
         {
-            var playerTeam = GetPlayerComponent<TeamComponent>().myTeam;
             var chargedSpyQuery = GetEntityQuery(ComponentType.ReadOnly<BulletComponent>(),
                 ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<HighlightedTag>());
             var chargedSpyCount = chargedSpyQuery.CalculateEntityCount();
-            var chargedFiveStarGeneralQuery = GetEntityQuery(ComponentType.ReadOnly<BulletComponent>(),
-                ComponentType.ReadOnly<PlayerTag>(), ComponentType.ReadOnly<HighlightedTag>());
             var highlightedTargetQuery = GetEntityQuery(ComponentType.ReadOnly<HighlightedTag>(),
                 ComponentType.ReadOnly<EnemyTag>());
             var highlightedTargetCount = highlightedTargetQuery.CalculateEntityCount();
 
-            Entities.WithAny<PieceTag, CellTag>().
-                ForEach((Entity pieceEntity, int entityInQueryIndex, in Translation cellTranslation, in RankComponent rankComponent, in TeamComponent teamComponent, in Translation translation) =>
-                            {
-                                var pieceTeam = HasComponent<PieceTag>(pieceEntity) ? teamComponent.myTeam : Team.Null;
-                                var cellTeam = HasComponent<CellTag>(pieceEntity) ? teamComponent.myTeam : Team.Null;
+            Entities.WithAny<PieceTag>().
+                ForEach((Entity entity, int entityInQueryIndex, in Translation entityTranslation, in RankComponent rankComponent, in TeamComponent teamComponent) =>
+                {
+                    var pieceTeam = new Team();
 
-                                var pieceRoundedLocation = math.round(cellTranslation.Value);
-                                if (!Location.IsMatchLocation(pieceRoundedLocation, roundedWorldPos) ||
-                                    !mouseButtonPressed) return;
-                                if ((playerTeam == pieceTeam || playerTeam == cellTeam))
-                                {
-                                    if (rankComponent.Rank != Piece.Spy || !HasComponent<BulletComponent>(pieceEntity)) return;
-                                    if (!HasComponent<HighlightedTag>(pieceEntity))
-                                    {
-                                        if (chargedSpyCount != 0) return;
-                                        Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, pieceEntity);
-                                    }
-                                    else
-                                    {
-                                        Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, pieceEntity);
-                                    }
-                                }
-                                else
-                                {
-                                    if (HasComponent<HighlightedTag>(pieceEntity))
-                                    {
-                                        Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, pieceEntity);
-                                        Tag.AddTag<EnemyCellTag>(ecb, entityInQueryIndex, pieceEntity);
-                                    }
-                                    else
-                                    {
-                                        if (highlightedTargetCount != 0) return;
-                                        Tag.RemoveTag<EnemyCellTag>(ecb, entityInQueryIndex, pieceEntity);
-                                        Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, pieceEntity);
-                                    }
-                                }
+                    if (HasComponent<PieceTag>(entity))
+                    {
+                        pieceTeam = teamComponent.myTeam;
+                    }
 
-                            }).ScheduleParallel();
+                    var entityRoundedLocation = math.round(entityTranslation.Value);
+                    if (!Location.IsMatchLocation(entityRoundedLocation, roundedMouseWorldPosition) ||
+                        !mouseButtonPressed) return;
+                    if ((teamToMove == pieceTeam))
+                    {
+                        if (rankComponent.Rank != Piece.Spy || !HasComponent<BulletComponent>(entity)) return;
+                        if (!HasComponent<HighlightedTag>(entity))
+                        {
+                            if (chargedSpyCount != 0) return;
+                            Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, entity);
+                        }
+                        else
+                        {
+                            Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, entity);
+                        }
+                    }
+                    else
+                    {
+                        if (HasComponent<HighlightedTag>(entity))
+                        {
+                            Tag.RemoveTag<HighlightedTag>(ecb, entityInQueryIndex, entity);
+                            Tag.AddTag<EnemyCellTag>(ecb, entityInQueryIndex, entity);
+                        }
+                        else
+                        {
+                            if (highlightedTargetCount != 0) return;
+                            Tag.RemoveTag<EnemyCellTag>(ecb, entityInQueryIndex, entity);
+                            Tag.AddTag<HighlightedTag>(ecb, entityInQueryIndex, entity);
+                        }
+                    }
+
+                }).ScheduleParallel();
             EcbSystem.AddJobHandleForProducer(this.Dependency);
         }
 

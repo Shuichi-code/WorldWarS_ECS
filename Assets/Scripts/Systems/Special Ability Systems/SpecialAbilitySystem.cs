@@ -33,7 +33,7 @@ namespace Assets.Scripts.Systems
                 var playerEntity = playerEntitiesWithSpecialAbilitiesArray[index];
                 switch (army.army)
                 {
-                    case Army.America:
+                    case Army.Philippines:
                         break;
                     case Army.Nazi:
                         EntityManager.AddComponentData(playerEntity, new ChargedAbilityTag());

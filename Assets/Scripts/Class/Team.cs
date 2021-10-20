@@ -3,7 +3,6 @@
     public enum Team
     {
         Invader,
-        Defender,
-        Null
+        Defender
     }
 }

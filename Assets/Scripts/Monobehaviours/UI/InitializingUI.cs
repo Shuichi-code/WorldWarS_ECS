@@ -36,6 +36,7 @@ namespace Assets.Scripts.Monobehaviours
             rootVisualElement.Q(GameConstants.ReturnBtnName)?.RegisterCallback<ClickEvent>(ev => ReturnToTitle());
             var openingListVisualElement = rootVisualElement.Q(openingListVEName);
             openingListView = VisualElementsUtility.InitializeList(new Dictionaries().openingList, openingListName);
+            openingListView.selectedIndex = 0;
             openingListVisualElement.Add(openingListView);
         }
 

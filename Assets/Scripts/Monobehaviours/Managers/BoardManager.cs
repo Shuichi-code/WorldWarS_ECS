@@ -61,7 +61,7 @@ namespace Assets.Scripts.Monobehaviours.Managers
 
                     float3 spawnPosition = new float3(startingXCoordinate + rows, startingYCoordinate + columns, CellZ);
                     cellPositionArray[boardIndex] = spawnPosition;
-                    entityManager.SetComponentData(boardArray[boardIndex], new Translation {Value = spawnPosition});
+                    entityManager.SetComponentData(boardArray[boardIndex], new Translation { Value = spawnPosition });
 
                     TagEdgeCells(columns);
                     TagHomeCells(columns);
@@ -73,8 +73,18 @@ namespace Assets.Scripts.Monobehaviours.Managers
         private void TagHomeCells(int columns)
         {
             var playerTeam = GameManager.GetInstance().player.Team;
-            var homeTeam = columns < 3 ? playerTeam : columns > 4 ? GameManager.SwapTeam(playerTeam) : Team.Null;
-            if (homeTeam == Team.Null) return;
+
+            var homeTeam = new Team();
+
+            if (columns < 3)
+            {
+                homeTeam = playerTeam;
+            }
+            else if (columns > 4)
+            {
+                homeTeam = GameManager.SwapTeam(playerTeam);
+            }
+
             entityManager.AddComponent(boardArray[boardIndex], typeof(HomeCellComponent));
             entityManager.SetComponentData(boardArray[boardIndex], new HomeCellComponent
             {

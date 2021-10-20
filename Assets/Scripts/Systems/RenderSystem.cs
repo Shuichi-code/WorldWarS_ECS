@@ -36,6 +36,7 @@ namespace Assets.Scripts.Systems
             var cellImage = gameManager.cellImage;
             Entities.
                 WithoutBurst().
+                WithNone<HighlightedTag>().
                 ForEach((in CellTag cellComponent, in Translation translation) =>
                 {
                     Render(translation, cellImage);
